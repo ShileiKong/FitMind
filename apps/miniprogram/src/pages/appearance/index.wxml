@@ -1,0 +1,15 @@
+<view class="page appearance-page skin-{{skin}}" style="{{skinStyle}}">
+  <view><view class="eyebrow">你的专属外观</view><view class="title">换一种陪伴</view><view class="subtitle">选择喜欢的皮肤，立即应用到整个小程序。</view></view>
+  <text class="error" wx:if="{{error}}">{{error}}</text>
+  <view class="skin-option {{skin === 'deepseek' ? 'chosen' : ''}}">
+    <view class="skin-preview whale-preview"><view class="whale-copy"><text class="preview-caption">DEEPSEEK</text><text class="preview-title">蓝鲸陪你
+慢慢变好</text><view class="skin-swatches"><view style="background:#526FD6"/><view style="background:#99B8F4"/><view style="background:#DCD5F5"/><view style="background:#FFFFFF"/></view></view><image class="skin-character" src="/assets/skins/deepseek-mascot.png" mode="aspectFit"/></view>
+    <view class="skin-description"><view class="row between"><text class="section">DeepSeek · 蓝鲸</text><text class="skin-applied" wx:if="{{skin === 'deepseek'}}">✓ 正在使用</text></view><text class="muted">蓝发、蕾丝与小鲸鱼。把每日坚持，交给温柔的陪伴。</text><button class="button choose-skin" data-skin="deepseek" bindtap="choose" disabled="{{skin === 'deepseek'}}">{{skin === 'deepseek' ? '已应用' : '使用蓝鲸皮肤'}}</button></view>
+  </view>
+  <view class="skin-option {{skin === 'midnight' ? 'chosen' : ''}}">
+    <view class="skin-preview midnight-preview"><view><text class="preview-caption">FITMIND ORIGINAL</text><text class="preview-title">深邃黑
+活力绿</text><view class="skin-swatches"><view style="background:#000000"/><view style="background:#00ED85"/><view style="background:#173426"/></view></view><view class="sample-ring"><text>72</text><text class="sample-unit">READY TO MOVE</text></view></view>
+    <view class="skin-description"><view class="row between"><text class="section">科技黑绿</text><text class="skin-applied" wx:if="{{skin === 'midnight'}}">✓ 正在使用</text></view><text class="muted">原版深黑底色与明亮绿色，专注每一组训练。</text><button class="button choose-skin" data-skin="midnight" bindtap="choose" disabled="{{skin === 'midnight'}}">{{skin === 'midnight' ? '已应用' : '使用科技黑绿'}}</button></view>
+  </view>
+  <text class="muted">选择保存在这部手机。切换皮肤不会改变记录、训练计划或 AI 设置。</text>
+</view>

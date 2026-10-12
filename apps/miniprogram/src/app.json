@@ -1,0 +1,53 @@
+{
+  "pages": [
+    "pages/today/index",
+    "pages/chat/index",
+    "pages/workout/index",
+    "pages/plans/index",
+    "pages/settings/index",
+    "pages/profile/index",
+    "pages/appearance/index",
+    "pages/onboarding/index",
+    "pages/editor/index",
+    "pages/training/index",
+    "pages/day/index",
+    "pages/food/index",
+    "pages/plan-detail/index",
+    "pages/nutrient-detail/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "FitMind",
+    "navigationBarBackgroundColor": "#000000",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#000000",
+    "backgroundTextStyle": "light",
+    "enablePullDownRefresh": true
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#93A69B",
+    "selectedColor": "#00ED85",
+    "backgroundColor": "#080E0B",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/today/index", "text": "今日" },
+      { "pagePath": "pages/plans/index", "text": "计划" },
+      { "pagePath": "pages/training/index", "text": "训练" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "permission": {
+    "scope.record": { "desc": "将你的健身与饮食描述录音，转写为可编辑文字。" }
+  },
+  "networkTimeout": { "request": 190000, "uploadFile": 60000 },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "usingComponents": {
+    "composer": "/components/composer/index",
+    "budget-ring": "/components/budget-ring/index",
+    "coach-dock": "/components/coach-dock/index",
+    "proposal-card": "/components/proposal-card/index",
+    "pending-inputs": "/components/pending-inputs/index"
+  }
+}

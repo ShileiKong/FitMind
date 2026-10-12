@@ -1,0 +1,3 @@
+.metric-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.food-sources button, .food-units button { margin: 0; }
+.food-sources button { flex: 1; }

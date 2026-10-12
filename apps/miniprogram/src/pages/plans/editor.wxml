@@ -1,0 +1,25 @@
+<template name="plan-editor">
+  <view class="field"><text class="muted">计划名称</text><input class="input" value="{{editorForm.name}}" data-field="name" bindinput="planInput" /></view>
+  <view class="card" wx:for="{{editorForm.days}}" wx:for-item="day" wx:for-index="dayIndex" wx:key="id">
+    <view class="field"><text class="muted">训练日 {{dayIndex + 1}} 名称</text><input class="input" value="{{day.name}}" data-day="{{dayIndex}}" data-field="name" bindinput="planInput" /></view>
+    <view class="field"><text class="muted">训练日 {{dayIndex + 1}} 日期 YYYY-MM-DD</text><input class="input" value="{{day.local_date}}" data-day="{{dayIndex}}" data-field="local_date" bindinput="planInput" placeholder="YYYY-MM-DD" /></view>
+    <view class="plan-exercise-editor" wx:for="{{day.exercises}}" wx:for-item="exercise" wx:for-index="exerciseIndex" wx:key="exercise_id">
+      <view class="section">动作 {{exerciseIndex + 1}}</view>
+      <view class="field"><text class="muted">动作名称</text><input class="input" value="{{exercise.name}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="name" bindinput="planInput" /></view>
+      <view class="field"><text class="muted">动作变式（如杠铃平板）</text><input class="input" value="{{exercise.variant}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="variant" bindinput="planInput" /></view>
+      <view class="field"><text class="muted">器械（如杠铃）</text><input class="input" value="{{exercise.equipment}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="equipment" bindinput="planInput" /></view>
+      <view class="row plan-loads"><button wx:for="{{loadChoices}}" wx:for-item="choice" wx:key="key" class="button {{exercise.load_convention === choice.key ? '' : 'secondary'}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-key="{{choice.key}}" bindtap="planLoad">{{choice.label}}</button></view>
+      <view class="field"><text class="muted">计划组数</text><input class="input" type="number" value="{{exercise.sets}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="sets" bindinput="planInput" /></view>
+      <view class="field"><text class="muted">目标最少次数</text><input class="input" type="number" value="{{exercise.reps_min}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="reps_min" bindinput="planInput" /></view>
+      <view class="field"><text class="muted">目标最多次数</text><input class="input" type="number" value="{{exercise.reps_max}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="reps_max" bindinput="planInput" /></view>
+      <view class="field"><text class="muted">计划重量 kg（可留空）</text><input class="input" type="digit" value="{{exercise.weight_kg}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="weight_kg" bindinput="planInput" /></view>
+      <view class="field"><text class="muted">调整步长 kg（可留空）</text><input class="input" type="digit" value="{{exercise.increment_kg}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="increment_kg" bindinput="planInput" /></view>
+      <view class="field"><text class="muted">组间休息 秒</text><input class="input" type="number" value="{{exercise.rest_seconds}}" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" data-field="rest_seconds" bindinput="planInput" /></view>
+      <button wx:if="{{day.exercises.length > 1}}" class="button secondary" data-day="{{dayIndex}}" data-exercise="{{exerciseIndex}}" bindtap="removeExercise">移除此动作</button>
+    </view>
+    <button class="button secondary" data-day="{{dayIndex}}" bindtap="addExercise">添加动作</button>
+    <button wx:if="{{editorForm.days.length > 1}}" class="button secondary" data-day="{{dayIndex}}" bindtap="removeDay">移除此训练日</button>
+  </view>
+  <button class="button secondary" bindtap="addDay">添加训练日</button>
+  <button class="button" bindtap="savePlan" disabled="{{busy}}" loading="{{busy}}">{{busy ? '保存中…' : plan ? '保存计划修改' : '生成计划草案'}}</button>
+</template>

@@ -1,0 +1,41 @@
+<view class="page skin-{{skin}}" style="{{skinStyle}}">
+  <view class="title">{{title}}</view>
+  <view class="muted">{{entity ? '更正保留修订，并重新计算余额。' : '空白营养值表示未知。'}}</view>
+  <view class="error" wx:if="{{error}}">{{error}}</view>
+  <view class="field" wx:if="{{mode === 'memory'}}"><text class="muted">记忆内容</text><input class="input" maxlength="-1" value="{{form.value}}" data-field="value" bindinput="input"/></view>
+  <block wx:else>
+    <view class="field"><text class="muted">{{mode === 'target' ? '生效日期 YYYY-MM-DD' : '发生日期 YYYY-MM-DD'}}</text><input class="input" maxlength="-1" value="{{mode === 'target' ? form.effective_from : form.local_date}}" data-field="{{mode === 'target' ? 'effective_from' : 'local_date'}}" bindinput="input"/></view>
+    <view class="field" wx:if="{{mode === 'water'}}"><text class="muted">饮水量 ml</text><input class="input" maxlength="-1" type="digit" value="{{form.amount_ml}}" data-field="amount_ml" bindinput="input"/></view>
+    <block wx:if="{{mode === 'body'}}">
+      <view class="metric-options"><view class="chip {{form.metric === item.key ? 'selected' : ''}}" wx:for="{{bodyFields}}" wx:key="key" data-field="metric" data-value="{{item.key}}" bindtap="choose"><text class="text">{{item.label}}</text></view></view>
+      <view class="field"><text class="muted">{{bodyLabel}}</text><input class="input" maxlength="-1" type="digit" value="{{form.value}}" data-field="value" bindinput="input"/></view>
+    </block>
+    <block wx:if="{{mode === 'food'}}">
+      <view class="field"><text class="muted">食品名称</text><input class="input" maxlength="-1" value="{{form.name}}" data-field="name" bindinput="input"/></view>
+      <view class="row food-sources"><button class="button {{form.source !== 'label' ? 'secondary' : ''}}" data-field="source" data-value="label" bindtap="choose">准确 · 标签</button><button class="button {{form.source !== 'estimate' ? 'secondary' : ''}}" data-field="source" data-value="estimate" bindtap="choose">估算 · 描述</button></view>
+      <view class="card" wx:if="{{form.source === 'label'}}">
+        <view class="section">标签基准与实际食用量</view>
+        <view class="row food-units"><button class="button {{form.basis_unit !== item.key ? 'secondary' : ''}}" wx:for="{{units}}" wx:key="key" data-field="basis_unit" data-value="{{item.key}}" bindtap="choose">{{item.label}}</button></view>
+        <view class="field"><text class="muted">标签对应量 {{form.basis_unit}}</text><input class="input" maxlength="-1" type="digit" value="{{form.basis_quantity}}" data-field="basis_quantity" bindinput="input"/></view>
+        <view class="field"><text class="muted">实际食用量 {{form.basis_unit}}</text><input class="input" maxlength="-1" type="digit" value="{{form.consumed_quantity}}" data-field="consumed_quantity" bindinput="input"/></view>
+        <view class="muted">下方填写标签基准量营养值，服务端按食用量计算。</view>
+      </view>
+      <view class="field" wx:if="{{form.source === 'estimate'}}"><text class="muted">份量与估算依据，例如熟米饭约 150g</text><input class="input" maxlength="-1" value="{{form.assumptions}}" data-field="assumptions" bindinput="input"/></view>
+    </block>
+    <view class="field" wx:if="{{mode === 'target'}}"><text class="muted">饮水目标 ml（空白为未设置）</text><input class="input" maxlength="-1" type="digit" value="{{form.water_ml}}" data-field="water_ml" bindinput="input"/></view>
+    <block wx:if="{{mode === 'target' || mode === 'food'}}"><view class="field" wx:for="{{nutritionFields}}" wx:key="key"><text class="muted">{{item.label}}（空白为未知）</text><input class="input" maxlength="-1" type="digit" value="{{form[item.key]}}" data-field="{{item.key}}" bindinput="input"/></view></block>
+    <view class="field" wx:if="{{mode !== 'target'}}"><text class="muted">备注（可选）</text><input class="input" maxlength="-1" value="{{form.note}}" data-field="note" bindinput="input"/></view>
+    <button class="button secondary" wx:if="{{mode === 'target'}}" bindtap="toggleHistory">{{history ? '已允许历史修正' : '需要修改历史目标时点此允许'}}</button>
+  </block>
+  <button class="button" wx:if="{{!draft}}" bindtap="save" disabled="{{busy || !connected || (id && !entity)}}">{{busy ? '保存中…' : mode === 'target' ? '生成目标草案' : '保存记录'}}</button>
+  <button class="button secondary" wx:if="{{id}}" bindtap="reloadEntity" disabled="{{busy}}">重新加载原记录</button>
+  <view class="card" wx:if="{{draft}}">
+    <view class="section">饮食目标 · 待确认</view>
+    <view class="muted">确认后从今天生效，立即更新今日剩余额度。</view>
+    <view class="muted">水 {{draft.water_ml === null ? '—' : draft.water_ml}}ml · 热量 {{draft.calories_kcal === null ? '—' : draft.calories_kcal}}kcal
+碳水 {{draft.carbs_g === null ? '—' : draft.carbs_g}}g / 蛋白质 {{draft.protein_g === null ? '—' : draft.protein_g}}g / 脂肪 {{draft.fat_g === null ? '—' : draft.fat_g}}g</view>
+    <button class="button" bindtap="confirmTarget" disabled="{{busy || !connected}}">确认饮食目标并应用到今日</button>
+  </view>
+  <button class="button secondary" wx:if="{{entity && mode !== 'target' && mode !== 'memory'}}" bindtap="undo" disabled="{{busy}}">撤销这条记录</button>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput"/>
+</view>

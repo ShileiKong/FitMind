@@ -1,0 +1,46 @@
+<view class="page nutrient-detail-page skin-{{skin}}" style="{{skinStyle}}">
+  <view class="heading">
+    <view class="grow">
+      <view class="brand"><view class="brand-dot"/><text class="brand-name">FitMind</text><text class="brand-tagline">每一份摄入都有来源</text></view>
+      <view class="title detail-title">{{name}}来源</view>
+      <view class="subtitle detail-date">{{date || '正在确认日期'}} · {{kind === 'water' ? '当天的饮水记录' : '当天的饮食记录'}}</view>
+    </view>
+  </view>
+  <view class="error" wx:if="{{error || detailError}}">{{detailError || error}}</view>
+  <view class="muted" wx:if="{{loading || detailLoading}}">正在整理这一天的摄入来源…</view>
+  <button class="secondary" wx:if="{{error || detailError}}" bindtap="load">重新加载</button>
+
+  <block wx:if="{{loaded && budget}}">
+    <view class="card detail-summary">
+      <view class="row between"><view class="eyebrow">已记录{{name}}</view><view class="badge" wx:if="{{budget.estimated}}">{{budget.incomplete ? '部分待补' : '含估算'}}</view></view>
+      <view class="detail-total"><text class="big green">{{budget.estimated ? '约 ' : ''}}{{budget.total}}</text><text class="muted">{{unit}}</text></view>
+      <view class="detail-budget-grid">
+        <view><view class="muted">当日目标</view><view class="detail-budget-value">{{budget.target}} <text class="muted">{{unit}}</text></view></view>
+        <view><view class="muted">{{budget.target === '—' ? '待设目标' : (budget.estimated ? '约' : '') + budget.label}}</view><view class="detail-budget-value {{budget.over ? 'over' : 'green'}}">{{budget.value}} <text class="muted">{{unit}}</text></view></view>
+      </view>
+      <view class="detail-note muted" wx:if="{{unknownCount}}">{{unknownCount}} 条记录的{{name}}待补，未计入总量；剩余额度按已记录部分估算。</view>
+      <view class="detail-note muted" wx:elif="{{budget.estimated}}">含估算记录，摄入量和剩余额度均为参考值。</view>
+    </view>
+
+    <view class="detail-source-heading"><text class="section">来源明细</text><text class="muted">{{rows.length}} 条记录</text></view>
+    <view class="muted detail-share-note" wx:if="{{rows.length}}">占比按已知总量计算。点开任一记录可更正。</view>
+    <view class="card detail-empty" wx:if="{{!rows.length}}">
+      <view class="detail-empty-icon"><image src="/assets/icons/{{kind === 'water' ? 'droplets' : 'utensils'}}-{{skinAccentIcon}}.png"/></view>
+      <view class="section">这一天还没有{{kind === 'water' ? '饮水' : '饮食'}}记录</view>
+      <view class="muted">{{canAdd ? '记录第一份摄入，之后就能在这里查看它的贡献。' : '这一天的摄入保存后，会在这里汇总来源。'}}</view>
+    </view>
+    <view class="card nutrient-record" wx:for="{{rows}}" wx:key="id" data-id="{{item.id}}" bindtap="editRecord" aria-role="button" aria-label="{{item.name}}，{{item.amountText}}{{item.known ? unit : ''}}，点击更正记录">
+      <view class="row between"><text class="badge detail-source-badge">{{item.sourceLabel}}</text><view class="row detail-edit" data-id="{{item.id}}" catchtap="editRecord"><text>更正</text><image class="chevron" src="/assets/icons/chevron-right-{{skinMutedIcon}}.png"/></view></view>
+      <view class="row between detail-row-main"><view class="section detail-row-title">{{item.name}}</view><view class="detail-row-amount {{item.known ? 'green' : 'muted'}}">{{item.amountText}}<text wx:if="{{item.known}}" class="detail-row-unit"> {{unit}}</text></view></view>
+      <block wx:if="{{item.known}}">
+        <view class="detail-share-track"><view style="width:{{item.sharePercent}}%"/></view>
+        <view class="muted detail-row-share">占已知总量 {{item.shareText}}</view>
+      </block>
+      <view class="muted detail-row-share" wx:else>{{name}}待补，尚未计入已知总量。</view>
+      <view class="muted detail-row-quantity" wx:if="{{item.quantityText}}">{{item.quantityText}}</view>
+      <view class="muted detail-row-assumptions" wx:if="{{item.assumptionsText}}">估算依据：{{item.assumptionsText}}</view>
+      <view class="muted detail-row-note" wx:if="{{item.note}}">{{item.note}}</view>
+    </view>
+    <button class="detail-add" wx:if="{{canAdd}}" bindtap="addRecord">记录今日{{kind === 'water' ? '饮水' : '饮食'}}</button>
+  </block>
+</view>

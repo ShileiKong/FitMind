@@ -1,0 +1,31 @@
+<view class="page setup-page skin-{{skin}}" style="{{skinStyle}}">
+  <view class="heading between"><view><view class="eyebrow">FitMind · 首次教练引导</view><view class="title">先认识一下你</view><view class="subtitle">回答会逐步保存，随时可以回来继续。</view></view></view>
+  <view class="error" wx:if="{{error}}">{{error}}</view>
+  <view class="muted" wx:if="{{knownBodyLabel}}">{{knownBodyLabel}}</view>
+  <view class="card setup-coach"><view class="eyebrow">你的教练</view><text class="section">{{question.text}}</text><text class="muted">{{question.hint}}</text>
+    <block wx:if="{{question.id !== 'review'}}">
+      <textarea class="setup-answer" value="{{answer}}" placeholder="和教练说说…" maxlength="500" bindinput="input" disabled="{{busy}}" auto-height/>
+      <view class="row wrap"><button wx:for="{{question.choices}}" wx:key="*this" class="secondary setup-choice" data-value="{{item}}" bindtap="choose" disabled="{{busy}}">{{item}}</button></view>
+      <button bindtap="submit" disabled="{{busy || !answer}}">{{busy ? '保存中…' : '告诉教练'}}</button>
+    </block>
+  </view>
+  <view class="card" wx:if="{{question.id === 'review'}}"><view class="eyebrow">核对资料</view>
+    <view class="setup-row between row" wx:for="{{rows}}" wx:key="id"><view class="grow"><view class="muted">{{item.label}}</view><view class="text">{{item.value}}</view></view><button class="text-button green" data-step="{{item.id}}" bindtap="edit" disabled="{{busy}}">修改</button></view>
+    <view class="muted">目标与训练安排会生成草案，确认后才生效。</view>
+    <button wx:if="{{!completed}}" bindtap="finish" disabled="{{busy || !ready}}">保存这些资料</button>
+    <text class="receipt" wx:if="{{completed}}">资料已保存，可以随时修改。</text>
+    <button wx:if="{{hasAI && !suggestion}}" bindtap="suggest" disabled="{{busy || !ready}}">{{busy ? '教练正在准备建议…' : '让 AI 生成目标与训练草案'}}</button>
+    <button class="secondary" wx:if="{{!hasAI}}" bindtap="openSettings">接入 AI，生成个性化建议</button>
+    <button class="secondary" bindtap="home" disabled="{{busy}}">回到今日</button>
+  </view>
+  <view class="card" wx:if="{{suggestion}}"><text class="eyebrow">FitMind · 建议</text><text class="chat-answer" wx:if="{{!suggestion.error}}">{{suggestion.shortAnswer}}</text>
+    <text class="receipt" wx:for="{{suggestion.receipts}}" wx:key="index">{{item.label}}</text>
+    <text class="error" wx:for="{{suggestion.errors}}" wx:key="index">{{item}}</text>
+    <proposal-card class="proposal-component" wx:for="{{suggestion.proposals}}" wx:key="id" proposal="{{item}}" busy="{{busy}}" bind:view="proposal" bind:confirm="confirmProposal"/>
+    <button class="secondary" wx:if="{{suggestion.result.error.retryable || suggestion.pending}}" bindtap="recoverSuggestion" disabled="{{busy}}">恢复这条建议</button>
+    <button class="text-button green" bindtap="openChat">继续和教练聊</button>
+  </view>
+  <view class="muted" wx:if="{{busy}}">正在处理。已保存的资料会保留，回复完成后在这里查看。</view>
+  <button class="text-button" wx:if="{{!completed}}" bindtap="skipSetup" disabled="{{busy}}">稍后再说，先体验记录</button>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput"/>
+</view>

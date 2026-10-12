@@ -1,0 +1,49 @@
+<view class="page tab-page skin-{{skin}}" style="{{skinStyle}}">
+  <view class="heading">
+    <view class="grow">
+      <view class="brand"><view class="brand-dot"/><text class="brand-name">FitMind</text><text class="brand-tagline">你的私人教练</text></view>
+      <view class="title">我的身体档案</view>
+      <view class="subtitle">真实记录，持续认识自己</view>
+    </view>
+  </view>
+  <view class="error" wx:if="{{error}}">{{error}}</view>
+  <view class="card skin-entry" bindtap="openAppearance" aria-role="button" aria-label="切换皮肤"><view class="row between"><view class="grow"><view class="eyebrow">你的专属外观</view><view class="section">{{skinName}}</view><view class="muted">切换皮肤，换一种陪伴</view></view><image wx:if="{{skin === 'deepseek'}}" class="skin-entry-mascot" src="/assets/skins/deepseek-mascot.png" mode="aspectFit"/><view wx:else class="skin-entry-colors"><view/><view/><view/></view><image class="chevron" src="/assets/icons/chevron-right-{{skinAccentIcon}}.png"/></view></view>
+  <view class="card"><view class="row between"><view class="section">教练资料</view><view class="badge">{{setupCompleted ? '已设置' : setupStarted ? '待完善' : '首次引导'}}</view></view><view class="muted" wx:if="{{!fitnessRows.length}}">告诉教练你的身高、体重、目标和训练偏好，一起确定适合你的起点。</view><view wx:for="{{fitnessRows}}" wx:key="id"><view class="muted">{{item.label}}</view><view class="text">{{item.value}}</view></view><button class="secondary" bindtap="setup">{{setupCompleted ? '查看与修改资料' : '继续和教练设置'}}</button></view>
+  <view class="card">
+    <view class="eyebrow">身体数据</view>
+    <view class="muted">最近体重</view>
+    <view class="row"><text class="big">{{latest ? latest.value : '—'}}</text><text class="muted">kg</text></view>
+    <view class="muted">{{latest ? latest.local_date : '还没有身体数据'}}</view>
+    <button class="button secondary" data-mode="body" bindtap="openEditor">记录身体数据</button>
+  </view>
+  <view class="card">
+    <view class="section">体重变化</view>
+    <view class="muted" wx:if="{{!points.length}}">保存体重后，会按发生日期展示趋势。</view>
+    <view class="row between" wx:for="{{points}}" wx:key="id">
+      <text class="muted">{{item.local_date}}</text>
+      <view class="weight-track"><view class="weight-fill" style="width: {{item.percent}}%"/></view>
+      <text class="text weight-number">{{item.value}} kg</text>
+    </view>
+  </view>
+  <view class="card">
+    <view class="section">目标版本</view>
+    <view class="muted" wx:if="{{!targets.length}}">与 AI 对话设定，或手动创建每日目标。</view>
+    <view class="target-version" wx:for="{{targets}}" wx:key="id">
+      <view class="text">{{item.effective_from}} 起 · {{item.caloriesLabel}} kcal · {{item.statusLabel}}</view>
+      <button class="button secondary" wx:if="{{item.status === 'draft'}}" data-mode="target" data-id="{{item.id}}" bindtap="openEditor">查看并确认</button>
+    </view>
+    <button class="button secondary" data-mode="target" bindtap="openEditor">设置每日目标</button>
+  </view>
+  <view class="card">
+    <view class="section">AI 长期记忆</view>
+    <view class="muted">这里保存明确的习惯和偏好。更正或删除后，下次对话使用最新事实。</view>
+    <view class="muted" wx:if="{{!memories.length}}">可以告诉教练“记住：我更喜欢晚上训练”。</view>
+    <view class="memory-entry" wx:for="{{memories}}" wx:key="id">
+      <view class="text">{{item.value}}</view>
+      <view class="muted">来源 {{item.source_message_id}} · v{{item.version}}</view>
+      <view class="row"><button class="button secondary" data-mode="memory" data-id="{{item.id}}" bindtap="openEditor">更正</button><button class="button secondary" data-id="{{item.id}}" bindtap="forget" disabled="{{busy}}">删除记忆</button></view>
+    </view>
+  </view>
+  <button class="button secondary" bindtap="openSettings">本地数据、AI 与提醒设置</button>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput"/>
+</view>

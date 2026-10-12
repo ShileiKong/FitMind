@@ -1,0 +1,37 @@
+{
+  "name": "fitmind",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "dev:api": "npm run dev -w @fitmind/api",
+    "dev:mobile": "npm run start -w @fitmind/mobile",
+    "dev": "node scripts/dev.mjs",
+    "preview": "node scripts/preview.mjs",
+    "lint": "npm run lint -w @fitmind/mobile",
+    "export:web": "npm run build -w @fitmind/mobile",
+    "export:ios": "npm run export:ios -w @fitmind/mobile",
+    "export:openapi": "npm run export:openapi -w @fitmind/api",
+    "export:miniprogram": "node apps/miniprogram/scripts/build.mjs",
+    "package:miniprogram": "node scripts/package-miniprogram.mjs",
+    "dev:mini-api": "node scripts/mini-lan.mjs"
+  },
+  "engines": {
+    "node": ">=24.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "prettier": "3.6.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "fflate": "0.8.2",
+    "vitest": "^4.1.0"
+  }
+}

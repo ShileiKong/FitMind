@@ -1,0 +1,10 @@
+<view class="composer-theme skin-{{skin}}" style="{{skinStyle}}">
+<view class="composer-header"><view class="coach"><view class="whale-avatar" wx:if="{{skin === 'deepseek'}}"><image src="/assets/skins/deepseek-mascot.png" mode="aspectFit"/></view><image wx:else src="/assets/icons/sparkles-{{skinAccentIcon}}.png"/><text>{{skin === 'deepseek' ? '大肥鱼' : 'AI 教练'}} · {{capabilities.text ? '已接入' : capabilities.local ? '本地记录' : capabilities.demo ? '演示模式' : '等待 API'}}</text></view><button bindtap="conversation" aria-label="查看对话">查看对话<image src="/assets/icons/chevron-right-{{skinMutedIcon}}.png"/></button></view>
+<view class="composer">
+  <textarea class="draft" value="{{value}}" focus="{{focus}}" adjust-position="{{adjustPosition}}" bindfocus="focus" bindkeyboardheightchange="keyboard" bindinput="input" placeholder="和教练说说，刚刚的一组…" placeholder-class="placeholder" maxlength="10000" auto-height cursor-spacing="24" disabled="{{busy}}" />
+  <button class="tool" bindtap="send" disabled="{{!canSend}}" aria-label="发送消息"><view class="send {{!canSend ? 'inactive' : ''}}"><image src="/assets/icons/arrow-up-{{canSend ? skinSendIcon : skinAccentIcon}}.png" wx:if="{{!busy}}"/><view class="spinner" wx:else/></view></button>
+  <button class="tool" bindtap="photo" disabled="{{busy || recording}}" aria-label="拍照或选图"><image class="camera" src="/assets/icons/camera-{{skinMutedIcon}}.png"/></button>
+  <button class="tool" bindtap="voice" disabled="{{busy}}" aria-label="{{recording ? '停止录音' : '语音输入'}}"><image class="mic" src="/assets/icons/{{recording ? 'square' : 'mic'}}-{{skinTextIcon}}.png"/></button>
+</view>
+
+</view>

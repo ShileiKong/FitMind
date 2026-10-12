@@ -1,0 +1,16 @@
+{
+  "name": "@fitmind/miniprogram",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "miniprogram-api-typings": "^5.2.1",
+    "miniprogram-automator": "^0.12.1",
+    "sharp": "^0.35.5"
+  }
+}

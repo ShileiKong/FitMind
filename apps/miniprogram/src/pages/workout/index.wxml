@@ -1,0 +1,38 @@
+<view class="page workout-page skin-{{skin}}" style="{{skinStyle}}">
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <block wx:if="{{!session}}">
+    <view wx:if="{{loading}}" class="muted">正在读取…</view>
+    <view class="card" wx:elif="{{!days.length}}"><view class="section">还没有开始训练</view><view class="muted">先在计划页确认训练日，开始后即可逐组记录。</view><button class="button secondary" bindtap="openChat" data-prompt="帮我安排一个适合我的训练计划">和教练制定计划</button></view>
+    <view class="card" wx:for="{{days}}" wx:key="id"><view class="eyebrow">{{item.local_date}}</view><view class="section">{{item.name}}</view><view class="muted">{{item.exercises.length}} 个动作</view><button class="button" data-id="{{item.id}}" bindtap="start" disabled="{{busy || item.status !== 'active'}}">开始这次训练</button></view>
+  </block>
+  <block wx:else>
+    <view class="eyebrow">{{session.local_date}} / {{statusLabel}}</view><view class="title">{{session.snapshot.name}}</view>
+    <view class="field"><text class="muted">整场训练日期更正（YYYY-MM-DD）</text><input class="input" value="{{dateCorrection}}" placeholder="{{session.local_date}}" data-field="dateCorrection" bindinput="input" /></view>
+    <button class="button secondary" data-action="change_date" bindtap="transition" disabled="{{busy || !dateCorrection}}">更正整场归属日期</button>
+    <view class="muted">已保存 {{sets.length}} 组 · 当前 {{currentExercise.name}}</view>
+    <view class="row wrap exercise-choices"><button wx:for="{{exercises}}" wx:key="exercise_id" class="button {{item.exercise_id === selected ? '' : 'secondary'}}" data-id="{{item.exercise_id}}" bindtap="select" disabled="{{busy || !canRecord}}">{{item.name}}</button></view>
+    <block wx:if="{{canRecord}}">
+      <view class="card">
+        <view class="section">{{edit ? '更正实际组' : '记录这一组'}} · {{currentExercise.name}}</view>
+        <view class="muted">计划 {{currentExercise.weight_kg === null ? '待定' : currentExercise.weight_kg}}kg × {{currentExercise.reps_min}}–{{currentExercise.reps_max}}次 · {{currentExercise.load_convention === 'per_hand' ? '每只手' : '动作指定重量记法'}}<text>\n</text>下方填写实际表现；空白重量保持未知。</view>
+        <view class="row"><view class="field grow"><text class="muted">实际重量 kg</text><input class="input" type="digit" value="{{weight}}" data-field="weight" bindinput="input" /></view><view class="field grow"><text class="muted">实际次数</text><input class="input" type="number" value="{{reps}}" data-field="reps" bindinput="input" /></view></view>
+        <view class="row difficulty-choices"><button wx:for="{{difficulties}}" wx:key="*this" class="button {{difficultyIndex === index ? '' : 'secondary'}}" data-index="{{index}}" bindtap="difficulty">{{item}}</button></view>
+        <view class="field"><text class="muted">RPE 1–10（可选）</text><input class="input" type="digit" value="{{rpe}}" data-field="rpe" bindinput="input" /></view>
+        <view class="row between"><text class="text">出现疼痛</text><switch color="#FFA39B" checked="{{pain}}" bindchange="pain" /></view>
+        <button class="button" bindtap="recordSet" disabled="{{busy || (session.status === 'paused' && !edit)}}" loading="{{busy}}">{{busy ? '保存中…' : edit ? '保存更正' : '保存实际组'}}</button>
+        <button wx:if="{{edit}}" class="button secondary" bindtap="cancelEdit">取消更正</button>
+      </view>
+      <block wx:for="{{recommendations}}" wx:key="id"><view wx:if="{{item.type === 'next_set'}}" class="card"><view class="eyebrow">NEXT SET / 仅为建议</view><view class="section">{{item.weightLabel}} kg × {{item.repsLabel}}</view><view class="muted">{{item.reason}}</view><button wx:if="{{item.status === 'proposed'}}" class="button secondary" data-id="{{item.id}}" bindtap="accept" disabled="{{busy}}">填入下一组建议</button></view></block>
+      <view class="card" wx:if="{{restEnd > 0}}"><view class="muted">组间休息</view><view class="big">{{restRemaining}}s</view><button class="button secondary" bindtap="endRest">结束休息</button></view>
+      <view class="row"><button class="button secondary grow" data-action="{{session.status === 'paused' ? 'resume' : 'pause'}}" bindtap="transition" disabled="{{busy}}">{{session.status === 'paused' ? '恢复训练' : '暂停训练'}}</button><button class="button secondary grow" data-action="skip" bindtap="transition" disabled="{{busy}}">跳过当前动作</button></view>
+      <button class="button" data-action="complete" bindtap="transition" disabled="{{busy}}">完成这次训练</button><button class="button secondary" data-action="abandon" bindtap="transition" disabled="{{busy}}">结束并保留已记录的组</button>
+    </block>
+    <view class="section">实际组记录</view><view wx:if="{{!sets.length}}" class="muted">尚未记录实际组。也可以在底部直接告诉教练刚刚的表现。</view>
+    <view class="card" wx:for="{{sets}}" wx:key="id"><view class="text">{{index + 1}}. {{item.name}} · {{item.weight_kg === null ? '重量未知' : item.weight_kg}} kg × {{item.reps}} 次</view><view class="muted">{{item.difficultyLabel}}{{item.rpe ? ' · RPE ' + item.rpe : ''}}{{item.pain ? ' · 疼痛' : ''}}</view><view class="row"><button class="button secondary grow" data-id="{{item.id}}" bindtap="editSet" disabled="{{busy}}">更正这组</button><button class="button secondary grow" data-id="{{item.id}}" bindtap="undo" disabled="{{busy}}">撤销这组</button></view>
+      <block wx:if="{{edit.id === item.id && !canRecord}}"><view class="field"><text class="muted">更正实际重量 kg</text><input class="input" type="digit" value="{{weight}}" data-field="weight" bindinput="input" /></view><view class="field"><text class="muted">更正实际次数</text><input class="input" type="number" value="{{reps}}" data-field="reps" bindinput="input" /></view><button class="button" bindtap="recordSet" disabled="{{busy}}">保存更正</button><button class="button secondary" bindtap="cancelEdit">取消更正</button></block>
+    </view>
+    <block wx:for="{{recommendations}}" wx:key="id"><view wx:if="{{item.type === 'next_workout' && item.status === 'proposed'}}" class="card"><view class="section">下次训练建议</view><view class="muted">{{item.reason}} · {{item.weightLabel}} kg<text>\n</text>确认后才更新该计划的未来训练日。</view><button class="button" data-id="{{item.id}}" bindtap="accept" disabled="{{busy}}">接受未来计划调整</button></view></block>
+  </block>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput" />
+</view>
+<coach-dock id="coach-dock" />

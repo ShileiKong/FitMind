@@ -1,0 +1,24 @@
+.setup-page {
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+}
+.setup-coach {
+  border-color: var(--fm-accent-2e,#00ed852e);
+}
+.setup-choice {
+  width: auto !important;
+  min-height: 40px;
+  padding: 8px 14px;
+  font-weight: 400;
+  font-size: 13px;
+}
+.setup-answer {
+  min-height: 92px;
+}
+.setup-row {
+  padding: 8px 0;
+  gap: 16px;
+  border-bottom: 1px solid var(--fm-accent-10,#00ed8510);
+}
+.setup-row .text {
+  margin-top: 5px;
+}

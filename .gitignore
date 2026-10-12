@@ -1,0 +1,24 @@
+node_modules/
+.env
+.env.*
+!.env.example
+data/
+dist/
+.expo/
+.superpowers/
+prototype-review/
+*.log
+
+# Local exports, credentials and personal backups
+exports/
+*.zip
+*backup*.json
+*备份*.json
+project.private.config.json
+.DS_Store
+
+dist-ios/
+docs/verification/wechat-parity/*.png
+docs/verification/wechat-parity/*.jpg
+docs/verification/wechat-local/*.png
+docs/verification/wechat-local/*.jpg

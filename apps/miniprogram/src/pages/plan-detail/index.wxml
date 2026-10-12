@@ -1,0 +1,19 @@
+<import src="../plans/editor.wxml" />
+<view class="page skin-{{skin}}" style="{{skinStyle}}">
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <block wx:if="{{plan}}">
+    <view class="eyebrow">运动目标</view><view class="title">{{plan.name}}</view><view class="muted">{{plan.status === 'draft' ? '待确认草案' : plan.status === 'active' ? '已应用计划' : '计划已取消'}} · 版本 {{plan.version}}</view>
+    <view class="section">{{plan.periodLabel}}</view><view class="muted">{{plan.count}} 个训练日 · {{plan.weekly.length ? '按每周安排查看' : '按日期安排'}}</view>
+    <view class="card" wx:for="{{plan.weekly}}" wx:key="id"><view class="eyebrow">{{item.label}} · {{item.count}} 次</view><view class="section">{{item.name}}</view><view wx:if="{{item.range}}" class="muted">{{item.range}}</view><view class="plan-exercises" wx:for="{{item.exercises}}" wx:for-item="exercise" wx:key="exercise_id"><view class="text">{{exercise.name}} · {{exercise.prescription}}</view><view class="muted">{{exercise.load}}</view></view></view>
+    <view wx:if="{{plan.single.length && plan.weekly.length}}" class="section">{{plan.single.length}} 个单独安排</view>
+    <view class="card" wx:for="{{plan.single}}" wx:key="id"><view class="eyebrow">{{item.dateLabel}}</view><view class="section">{{item.name}}</view><view class="plan-exercises" wx:for="{{item.exercises}}" wx:for-item="exercise" wx:key="exercise_id"><view class="text">{{exercise.name}} · {{exercise.prescription}}</view><view class="muted">{{exercise.load}}</view></view><button wx:if="{{plan.status === 'active'}}" class="button secondary" data-id="{{item.id}}" bindtap="training">查看这个训练日</button></view>
+    <button wx:if="{{plan.next}}" class="button" data-id="{{plan.next.id}}" bindtap="training">查看下一次训练 · {{plan.next.dateLabel}}</button>
+    <button wx:if="{{plan.weekly.length}}" class="button secondary" bindtap="expand">{{expanded || trainingDate ? '收起具体日期' : '按日期查看 · ' + plan.count + ' 个训练日'}}</button>
+    <block wx:if="{{expanded || trainingDate}}"><view class="card" wx:for="{{plan.dates}}" wx:key="id"><view class="eyebrow">{{item.dateLabel}}</view><view class="text">{{item.name}}</view><button wx:if="{{plan.status === 'active'}}" class="button secondary" data-id="{{item.id}}" bindtap="training">查看这个训练日</button></view></block>
+    <view wx:if="{{plan.status === 'draft'}}" class="muted">确认后从今天启用，保留每周训练星期。</view>
+    <button wx:if="{{plan.status === 'draft'}}" class="button" bindtap="confirm" disabled="{{busy}}" loading="{{busy}}">确认运动目标并应用到今日</button>
+    <block wx:if="{{plan.status !== 'cancelled'}}"><button class="button secondary" bindtap="adjust">{{editing ? '收起修改' : '修改动作或训练日期'}}</button><button wx:if="{{editing && (error || editorVersion !== plan.version)}}" class="button secondary" bindtap="reloadEditor" disabled="{{busy}}">放弃修改，载入最新计划</button><template wx:if="{{editing}}" is="plan-editor" data="{{editorForm, loadChoices, busy, plan}}" /><button class="button secondary" bindtap="cancel" disabled="{{busy}}">取消计划与提醒</button></block>
+  </block>
+  <view wx:elif="{{loading}}" class="muted">正在读取…</view>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput" />
+</view>

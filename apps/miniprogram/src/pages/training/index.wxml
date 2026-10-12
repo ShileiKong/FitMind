@@ -1,0 +1,7 @@
+<view class="page tab-page skin-{{skin}}" style="{{skinStyle}}">
+  <view class="heading"><view class="grow"><view class="brand"><view class="brand-dot"></view><text class="brand-name">FitMind</text><text class="brand-tagline">你的私人教练</text></view><view class="title">训练</view><view class="subtitle">每一组，都让进步更清晰。</view></view></view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="card" wx:if="{{!sessions.length}}"><view class="empty-training-icon"><image src="/assets/icons/dumbbell-{{skinAccentIcon}}.png" /></view><view class="section">还没有训练记录</view><view class="muted">先在计划页确认训练日，开始后即可逐组记录。</view><button class="button secondary" bindtap="plans">查看训练计划</button></view>
+  <view class="card" wx:for="{{sessions}}" wx:key="id"><view class="eyebrow">{{item.local_date}} / {{item.statusLabel}}</view><view class="section">{{item.snapshot.name}}</view><view class="muted">已记录 {{item.setCount}} 组 · {{item.repCount}} 次</view><button class="button secondary" data-id="{{item.id}}" bindtap="detail">{{item.continuing ? '继续这次训练' : '查看实际表现'}}</button></view>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput" />
+</view>

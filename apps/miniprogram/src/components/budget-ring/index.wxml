@@ -1,0 +1,1 @@
+<view class="ring-shell" style="{{skinStyle}}" aria-hidden="true"><view class="track"/><view class="half right"><view class="fill" style="transform:rotate({{firstAngle}}deg)"/></view><view class="half left"><view class="fill" style="transform:rotate({{secondAngle}}deg)"/></view></view>

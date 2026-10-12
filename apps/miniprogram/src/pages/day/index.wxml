@@ -1,0 +1,9 @@
+<view class="page skin-{{skin}}" style="{{skinStyle}}">
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <block wx:if="{{day}}"><view class="eyebrow">{{day.local_date}} / v{{day.plan_version}}</view><view class="title">{{day.name}}</view>
+    <view class="card" wx:if="{{day.status === 'cancelled'}}"><view class="section">这个训练日已取消</view><view class="muted">你打开的是旧提醒，当前状态已经更新。</view></view>
+    <block wx:else><view class="card" wx:for="{{day.exercises}}" wx:key="exercise_id"><view class="section">{{item.name}}</view><view class="muted">{{item.variant}} · {{item.equipment}}<text>\n</text>{{item.sets}} 组 × {{item.reps_min}}–{{item.reps_max}} 次 · {{item.weight_kg === null ? '待定' : item.weight_kg}} kg<text>\n</text>步长 {{item.increment_kg === null ? '未知' : item.increment_kg}} kg · 休息 {{item.rest_seconds}} 秒</view></view><button class="button" bindtap="start" disabled="{{busy || day.status !== 'active'}}" loading="{{busy}}">开始这次训练</button></block>
+    <button class="button secondary" bindtap="plan">查看或修改完整计划</button>
+  </block><view wx:elif="{{loading}}" class="muted">正在读取…</view>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput" />
+</view>

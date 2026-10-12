@@ -1,0 +1,43 @@
+.ring-shell {
+  position: relative;
+  width: 104px;
+  height: 104px;
+}
+.track,
+.fill {
+  position: absolute;
+  top: 4px;
+  width: 96px;
+  height: 96px;
+  box-sizing: border-box;
+  border: 5px solid var(--fm-accent-28,#00ed8528);
+  border-radius: 50%;
+}
+.track {
+  left: 4px;
+}
+.half {
+  position: absolute;
+  top: 0;
+  width: 52px;
+  height: 104px;
+  overflow: hidden;
+}
+.right {
+  left: 52px;
+}
+.left {
+  left: 0;
+}
+.fill {
+  border-color: var(--fm-accent,#00ed85);
+  transform-origin: 48px 48px;
+}
+.right .fill {
+  left: -48px;
+  clip: rect(0px, 48px, 96px, 0px);
+}
+.left .fill {
+  left: 4px;
+  clip: rect(0px, 96px, 96px, 48px);
+}

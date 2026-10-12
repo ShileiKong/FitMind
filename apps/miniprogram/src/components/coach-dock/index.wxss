@@ -1,0 +1,17 @@
+.dock { position:fixed;left:0;right:0;bottom:0;padding:12px 20px calc(8px + env(safe-area-inset-bottom));background:var(--fm-base,#000);z-index:5;box-sizing:border-box; }
+.error { display:block;color:var(--fm-danger,#FFA39B);font-size:13px;line-height:20px;margin-bottom:8px; } .recording { color:var(--fm-accent,#00ED85);font-size:12px; }
+.photos { display:flex;gap:8px;margin-bottom:6px; } .photos view { display:flex;gap:6px;align-items:center; } .photos image { width:40px;height:40px;border-radius:8px; } .photos button { padding:0;background:transparent;font-size:12px;line-height:19px;color:var(--fm-accent,#00ED85);border:0;margin:0; } button::after { border:0; }
+.keyboard-open { padding-bottom:8px; }
+.preview { margin:0 0 12px;padding:12px 14px;background:var(--fm-preview,#08140D);border:1px solid var(--fm-accent-26,#00ED8526);border-radius:20px; }
+.preview-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;color:var(--fm-accent,#00ED85);font-size:11px;line-height:18px; }
+.preview-header view { display:flex;gap:14px; }
+.preview-header button,.preview-proposal button,.preview-retry { width:auto !important;min-height:24px;padding:0;background:transparent;color:var(--fm-accent,#00ED85);font-size:11px;line-height:18px;font-weight:400;margin:0; }
+.preview-scroll { overflow:hidden; }
+.preview-content { display:flex;flex-direction:column;gap:10px;padding:0 0 8px; }
+.preview-question { color:var(--fm-muted,#93A69B);font-size:11px;line-height:17px;white-space:pre-wrap; }
+.preview-answer { color:var(--fm-text,#F5F7F6);font-size:13px;line-height:21px;white-space:pre-wrap; }
+.preview-receipt { color:var(--fm-accent,#00ED85);font-size:11px;line-height:18px; }
+.preview-error { color:var(--fm-danger,#FFA39B);font-size:12px;line-height:19px; }
+.preview-wait,.preview-empty,.preview-note { color:var(--fm-muted,#93A69B);font-size:12px;line-height:19px; }
+.preview-proposal { display:flex;flex-direction:column;align-items:flex-start;gap:5px;border-top:1px solid var(--fm-accent-1a,#00ED851A);padding-top:10px;font-size:12px;line-height:19px; }
+.preview-retry { align-self:flex-start; }

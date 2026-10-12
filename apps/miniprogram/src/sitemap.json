@@ -1,0 +1,4 @@
+{
+  "desc": "个人健身记录不参与搜索索引",
+  "rules": [{ "action": "disallow", "page": "*" }]
+}

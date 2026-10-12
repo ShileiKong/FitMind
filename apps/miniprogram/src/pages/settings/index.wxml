@@ -1,0 +1,36 @@
+<view class="page skin-{{skin}}" style="{{skinStyle}}">
+  <view><view class="eyebrow">手机本地版 · 0.3.5</view><view class="title">你的私人 Agent</view><view class="subtitle">记录和计划保存在这部手机，无需电脑或服务器。</view></view>
+  <view class="error" wx:if="{{error}}">{{error}}</view>
+  <view class="card">
+    <view class="row between"><view class="section">AI 教练</view><view class="badge">{{keySaved ? '已配置' : '本地记录'}}</view></view>
+    <view class="muted">填入个人 DeepSeek API Key 后，可联网制定计划、分析记录。Key 只保存在这部手机，不随数据备份导出。</view>
+    <view class="field"><text class="muted">DeepSeek API Key</text><input class="input" password value="{{api_key}}" placeholder="{{keySaved ? '已保存，留空沿用' : '输入你的 API Key'}}" data-field="api_key" bindinput="input"/></view>
+    <view class="field"><text class="muted">模型</text><input class="input" value="{{model}}" data-field="model" bindinput="input"/></view>
+    <button class="button" bindtap="saveModel" disabled="{{busy}}">保存 AI 设置</button>
+    <button class="button secondary" wx:if="{{keySaved}}" bindtap="testModel" disabled="{{busy}}">测试 AI 连接</button>
+    <button class="button secondary" wx:if="{{keySaved}}" bindtap="clearModel" disabled="{{busy}}">移除 Key，使用本地记录助手</button>
+    <view class="muted">未配置 AI 时，仍可手动操作，也可说“喝了300毫升水”。文字 {{textStatus}} · 图片和录音识别暂未配置。</view>
+  </view>
+  <view class="card">
+    <view class="section">日期与提醒</view>
+    <view class="field"><text class="muted">时区</text><input class="input" value="{{timezone}}" data-field="timezone" bindinput="input"/></view>
+    <view class="field"><text class="muted">前一晚应用内提醒 HH:mm</text><input class="input" value="{{reminder_time}}" data-field="reminder_time" bindinput="input"/></view>
+    <view class="row between"><text class="text">进入小程序时提醒明日训练</text><switch checked="{{notifications_enabled}}" color="{{skinAccent}}" bindchange="toggleNotifications"/></view>
+    <view class="muted">到点后打开小程序，可在首页查看明日计划。关闭小程序后的定时手机推送需要服务器支持，此本地版不发送。</view>
+    <button class="button" bindtap="saveProfile" disabled="{{busy}}">保存日期与提醒设置</button>
+    <button class="button secondary" bindtap="reloadProfile" disabled="{{busy}}">读取最新设置</button>
+  </view>
+  <view class="card">
+    <view class="section">本地数据与备份</view>
+    <view class="muted">数据不会自动同步到电脑版或其他手机。导出 JSON 文件并保存；更换手机后可导入恢复。微信清理小程序数据后，需用备份恢复。</view>
+    <button class="button secondary" bindtap="exportData" disabled="{{busy}}">导出并保存备份</button>
+    <button class="button secondary" bindtap="importData" disabled="{{busy}}">从聊天文件导入备份</button>
+    <view class="muted">导入会先核对备份，确认后才替换当前数据。</view>
+    <view class="line"/>
+    <button class="button secondary" bindtap="restartSetup" disabled="{{busy || loading}}">重新开始首次引导</button>
+    <view class="muted">只重置教练资料，保留已有记录、目标和计划。</view>
+    <button class="button secondary danger-button" bindtap="clearData" disabled="{{busy || loading}}">清空本地数据</button>
+    <view class="muted">清空后从首次设置开始。AI Key 保留；记录无法撤销删除，请先备份。</view>
+  </view>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput"/>
+</view>

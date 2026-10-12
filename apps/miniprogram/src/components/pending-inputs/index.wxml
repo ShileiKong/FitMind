@@ -1,0 +1,5 @@
+<view class="pending" style="{{skinStyle}}" wx:for="{{items}}" wx:key="id">
+  <view>输入已保留 · 等待确认</view>
+  <view class="small spaced">{{item.body.text || item.body.name || '记录输入'}}<view>{{item.error}}</view></view>
+  <view class="buttons"><button class="secondary" data-id="{{item.id}}" bindtap="retry" disabled="{{busy}}">查看回执并重试</button><button class="text-button" data-id="{{item.id}}" bindtap="discard" disabled="{{busy}}">移除</button></view>
+</view>

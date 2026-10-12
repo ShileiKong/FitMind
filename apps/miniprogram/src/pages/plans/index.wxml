@@ -1,0 +1,10 @@
+<import src="./editor.wxml" />
+<view class="page tab-page skin-{{skin}}" style="{{skinStyle}}">
+  <view class="heading"><view class="grow"><view class="brand"><view class="brand-dot"></view><text class="brand-name">FitMind</text><text class="brand-tagline">你的私人教练</text></view><view class="title">训练计划</view><view class="subtitle">为下一次，做好准备。</view></view></view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="card" wx:for="{{plans}}" wx:key="id"><view class="eyebrow">{{item.statusLabel}} · v{{item.version}}</view><view class="section">{{item.name}}</view><view class="muted plan-overview">{{item.overviewText}}</view><button class="button secondary" data-id="{{item.id}}" bindtap="detail">查看计划</button></view>
+  <view class="card" wx:if="{{!plans.length}}"><view class="empty-plan-icon"><image src="/assets/icons/calendar-days-{{skinAccentIcon}}.png" /></view><view class="section">你的下一次训练，从这里开始</view><view class="muted">还没有计划。可以通过底部对话与教练制定，或手动填写。</view><view class="line"></view><view class="muted">确认后，前一晚打开小程序可查看明日提醒。</view></view>
+  <button class="button" disabled="{{!connected}}" bindtap="newPlan">{{editing ? '收起编辑器' : '创建训练计划'}}</button>
+  <template wx:if="{{editing}}" is="plan-editor" data="{{editorForm, loadChoices, busy}}" />
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput" />
+</view>

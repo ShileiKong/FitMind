@@ -1,0 +1,10 @@
+<view class="page skin-{{skin}}" style="{{skinStyle}}"><text class="eyebrow">NUTRITION / LABEL</text><view class="title">准确记录。</view><view class="subtitle">按营养成分表填写，实际摄入自动换算。未知的营养成分留空。</view><view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="card"><view class="field"><text class="label">食品名称</text><input value="{{form.name}}" data-field="name" bindinput="input" placeholder="例如：低脂牛奶"/></view>
+    <picker range="{{units}}" value="{{unitIndex}}" bindchange="unit">计量单位 · {{units[unitIndex]}} ▾</picker>
+    <view class="form-grid"><view class="field"><text class="label">标签基准量（每多少单位）</text><input type="digit" value="{{form.basis}}" data-field="basis" bindinput="input"/></view><view class="field"><text class="label">实际吃了多少</text><input type="digit" value="{{form.consumed}}" data-field="consumed" bindinput="input" placeholder="例如 250"/></view></view>
+    <view class="muted small spaced">以下填写标签基准量对应的营养，不是整餐的营养。</view>
+    <view class="form-grid"><view class="field"><text class="label">热量 kcal</text><input type="digit" value="{{form.calories}}" data-field="calories" bindinput="input" placeholder="未知可留空"/></view><view class="field"><text class="label">碳水 g</text><input type="digit" value="{{form.carbs}}" data-field="carbs" bindinput="input" placeholder="未知可留空"/></view><view class="field"><text class="label">蛋白质 g</text><input type="digit" value="{{form.protein}}" data-field="protein" bindinput="input" placeholder="未知可留空"/></view><view class="field"><text class="label">脂肪 g</text><input type="digit" value="{{form.fat}}" data-field="fat" bindinput="input" placeholder="未知可留空"/></view></view>
+    <button class="spaced" bindtap="save" disabled="{{busy || !connected}}" loading="{{busy}}">保存今天的摄入</button>
+  </view><view class="card" bindtap="openChat"><view class="section">没有标签？</view><view class="muted spaced">拍张照片，或者告诉 AI 吃了什么，得到标明依据的估算。</view><button class="secondary spaced">用 AI 记录 →</button></view>
+  <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput"/>
+</view>

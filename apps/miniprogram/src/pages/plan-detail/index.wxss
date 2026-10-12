@@ -1,0 +1,2 @@
+@import "../plans/index.wxss";
+.plan-exercises{display:flex;flex-direction:column;gap:4px}

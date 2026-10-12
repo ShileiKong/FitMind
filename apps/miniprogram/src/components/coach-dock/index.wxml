@@ -1,0 +1,22 @@
+<view class="dock {{keyboardHeight ? 'keyboard-open' : ''}}" style="{{skinStyle}}bottom:{{keyboardHeight}}px">
+  <view class="preview" wx:if="{{previewOpen}}">
+    <view class="preview-header"><text>{{skin === 'deepseek' ? '大肥鱼' : 'AI 教练'}}</text><view><button bindtap="openChat">完整对话</button><button bindtap="collapsePreview" aria-label="收起回复">收起</button></view></view>
+    <scroll-view class="preview-scroll" scroll-y style="height:{{previewHeight}}px" bindtouchstart="previewTouchStart" catchtouchmove="previewTouchMove" bindtouchend="previewTouchEnd" bindtouchcancel="previewTouchEnd" bindscroll="previewScroll">
+      <view class="preview-content" wx:if="{{preview}}">
+        <text class="preview-question">{{preview.text}}</text>
+        <text class="preview-wait" wx:if="{{preview.pending}}">教练正在处理，完成后会显示回复与回执…</text>
+        <text class="preview-answer" wx:if="{{preview.answer}}">{{preview.answer}}</text>
+        <text class="preview-receipt" wx:for="{{preview.receipts}}" wx:for-item="receipt" wx:key="index">{{receipt.label}}</text>
+        <text class="preview-error" wx:for="{{preview.errors}}" wx:for-item="messageError" wx:key="index">{{messageError}}</text>
+        <proposal-card class="proposal-component" wx:for="{{preview.proposals}}" wx:for-item="proposal" wx:key="id" proposal="{{proposal}}" busy="{{busy}}" bind:view="proposal" bind:confirm="confirmProposal"/>
+        <button class="preview-retry" wx:if="{{pending.length && !preview.pending}}" bindtap="retry" disabled="{{busy}}">重试待确认输入</button>
+        <button class="preview-retry" wx:if="{{preview.retryable && !pending.length}}" data-id="{{preview.messageId}}" bindtap="recover" disabled="{{busy}}">继续这条消息</button>
+      </view>
+      <text class="preview-empty" wx:else>说说刚刚吃了什么、练了哪一组，或向教练提问。</text>
+    </scroll-view>
+  </view>
+  <text class="error" wx:if="{{error && (!previewOpen || preview.actionError !== error)}}">{{error}}</text>
+  <view class="photos" wx:if="{{attachments.length}}"><view wx:for="{{attachments}}" wx:key="id"><image src="{{item.path}}" mode="aspectFill"/><button data-id="{{item.id}}" bindtap="removePhoto">移除</button></view></view>
+  <text class="recording" wx:if="{{recording}}">正在录音 · 最长 60 秒</text>
+  <composer id="composer" value="{{draft}}" focus="{{composerFocused}}" adjust-position="{{false}}" has-attachments="{{attachments.length > 0}}" busy="{{busy}}" recording="{{recording}}" connected="{{connected}}" capabilities="{{capabilities}}" bind:focus="focusComposer" bind:keyboard="keyboardChanged" bind:input="input" bind:send="send" bind:photo="photo" bind:voice="voice" bind:conversation="openChat"/>
+</view>

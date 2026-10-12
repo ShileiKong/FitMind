@@ -1,0 +1,1 @@
+.workout-page{padding-bottom:calc(150px + env(safe-area-inset-bottom))}.exercise-choices{gap:6px}.exercise-choices .button{flex:none}.difficulty-choices .button{flex:1;min-width:0}

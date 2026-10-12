@@ -1,0 +1,7 @@
+<view class="goal-card" style="{{skinStyle}}" wx:if="{{proposal}}">
+  <view class="goal-heading"><text class="goal-category">{{proposal.category}}</text><text class="goal-status">{{proposal.statusLabel}}</text></view>
+  <text class="goal-title">{{proposal.title}}</text>
+  <text class="goal-summary">{{proposal.preview}}</text>
+  <text class="goal-note">{{proposal.timingHint}}</text>
+  <view class="goal-actions"><button class="goal-details" bindtap="view" disabled="{{busy}}">查看详情</button><button class="goal-confirm" wx:if="{{proposal.canConfirm}}" bindtap="confirm" disabled="{{busy}}">{{busy ? '应用中…' : proposal.confirmLabel}}</button></view>
+</view>

@@ -1,0 +1,7 @@
+node_modules
+data
+dist
+.expo
+.superpowers
+package-lock.json
+docs/openapi.json
