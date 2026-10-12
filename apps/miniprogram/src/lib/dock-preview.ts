@@ -5,6 +5,8 @@ import { proposalActions } from './proposal-actions';
 export const dockPreviewData = {
   previewOpen: false,
   preview: null,
+  previewExpanded: false,
+  previewScrollTop: 0,
   composerFocused: false,
   keyboardHeight: 0,
   previewHeight: 210,
@@ -15,6 +17,8 @@ interface DockPreview {
   messageId?: string;
   text: string;
   answer: string;
+  fullAnswer: string;
+  hasDetails: boolean;
   receipts: any[];
   errors: string[];
   proposals: any[];
@@ -26,6 +30,8 @@ function waiting(text: string): DockPreview {
   return {
     text,
     answer: '',
+    fullAnswer: '',
+    hasDetails: false,
     receipts: [],
     errors: [],
     proposals: [],
@@ -40,6 +46,8 @@ function recent(messages: any[], state: any): DockPreview | null {
         messageId: message.message_id,
         text: message.text,
         answer: message.shortAnswer,
+        fullAnswer: message.answer,
+        hasDetails: message.long,
         receipts: message.receipts,
         errors: message.errors,
         proposals: message.proposals,
@@ -111,6 +119,9 @@ export function syncDock(dock: any) {
   }
   dock.setData({
     preview,
+    ...(dock.data.preview?.messageId !== preview?.messageId
+      ? { previewExpanded: false, previewScrollTop: 0 }
+      : {}),
     draft: c.saved('draft', ''),
     attachments: c.saved('attachments', []),
     connected: c.connected,
@@ -158,7 +169,12 @@ export const dockPreviewMethods: Record<
     )
       return;
     if (!this.data.previewOpen && !this.data.composerFocused) return;
-    this.setData({ previewOpen: false, composerFocused: false });
+    this.setData({
+      previewOpen: false,
+      composerFocused: false,
+      previewExpanded: false,
+      previewScrollTop: 0,
+    });
     wx.hideKeyboard?.({});
   },
   keyboardChanged(event: any) {
@@ -180,19 +196,31 @@ export const dockPreviewMethods: Record<
   previewTouchMove() {
     /* catchtouchmove keeps preview drags inside the scroll-view. */
   },
-  previewScroll() {
+  previewScroll(event?: any) {
     this._previewScrollingUntil = Date.now() + 200;
+    if (event?.detail?.scrollTop != null)
+      this.setData({ previewScrollTop: event.detail.scrollTop });
   },
   previewTouchEnd() {
     this._insidePreviewGesture = false;
     this._previewScrollingUntil = Date.now() + 200;
+  },
+  togglePreviewDetails() {
+    if (this.data.preview?.hasDetails)
+      this.setData({ previewExpanded: !this.data.previewExpanded });
   },
   beginPreview(text: string) {
     this.sync();
     this._previewRequestText = text;
     this._previewFailureId = null;
     this._previewSending = true;
-    this.setData({ previewOpen: true, preview: waiting(text), error: '' });
+    this.setData({
+      previewOpen: true,
+      preview: waiting(text),
+      previewExpanded: false,
+      previewScrollTop: 0,
+      error: '',
+    });
   },
   finishPreview(c: any, scope: string) {
     if (

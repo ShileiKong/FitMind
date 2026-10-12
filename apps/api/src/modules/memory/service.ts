@@ -1,4 +1,10 @@
-import type { CommandContext, Memory, MemoryInput } from '@fitmind/contracts';
+import type {
+  CommandContext,
+  Memory,
+  MemoryInput,
+  RecordView,
+  DailySummary,
+} from '@fitmind/contracts';
 import type { EntityStore } from '@fitmind/contracts';
 import { invariant } from '../../http/errors.js';
 import { resolveDate, getTimeContext } from '../time/service.js';
@@ -95,6 +101,48 @@ export class MemoryService {
       .filter((m) => m.deleted_at)
       .flatMap((m) => m.source_ids);
   }
+  /** Read one complete ledger snapshot rather than treating chat as intake. */
+  async nutritionContext(user: string, date: string) {
+    // Both reads execute synchronously before yielding; a concurrent edit cannot
+    // make page boundaries skip food or disagree with the summary totals.
+    const summaryRead: Promise<DailySummary> = this.s.summary.forDate(
+      user,
+      date,
+    );
+    const target = this.s.targets.forDate(user, date);
+    const foods = this.store
+      .list<RecordView>(user, 'record')
+      .filter(
+        (record) =>
+          !record.undone_at &&
+          record.kind === 'food' &&
+          record.local_date === date,
+      );
+    const summary = await summaryRead;
+    const budgets = Object.fromEntries(
+      (['calories_kcal', 'carbs_g', 'protein_g', 'fat_g'] as const).map(
+        (key) => {
+          const value = summary[key];
+          return [
+            key,
+            {
+              ...value,
+              // Partial intake gives a provisional upper allowance, not a precise balance.
+              provisional_remaining:
+                value.target == null
+                  ? null
+                  : Math.max(0, value.target - value.known_total),
+              provisional_over:
+                value.target == null
+                  ? null
+                  : Math.max(0, value.known_total - value.target),
+            },
+          ];
+        },
+      ),
+    );
+    return { local_date: date, target, budgets, foods };
+  }
   async buildContext(user: string, message: any) {
     const profile = this.s.profile.get(user);
     const time = getTimeContext(this.clock, profile.timezone);
@@ -138,6 +186,7 @@ export class MemoryService {
       profile,
       target: this.s.targets.forDate(user, date),
       today_summary: await this.s.summary.forDate(user, date),
+      nutrition_context: await this.nutritionContext(user, date),
       relevant_summary: await this.s.summary.forDate(user, relevant),
       active_workout: active,
       recent_workouts: this.s.workouts.list(user).slice(0, 10),

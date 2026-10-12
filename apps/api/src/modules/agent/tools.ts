@@ -56,6 +56,7 @@ const schemaMap: any = {
     value: Type.String(),
   }),
   get_context: obj({}),
+  get_nutrition_context: obj({}),
   query_history: obj({
     start_date: Type.String(),
     end_date: Type.String(),
@@ -172,12 +173,15 @@ const descriptions: any = {
   analyze_food_photo:
     '分析本条消息附带的图片 ID，标签是待确认草案，餐食为估算；不会写入饮食。',
   get_context: '读取服务器日期、真实目标、余额、当前训练和长期记忆。',
+  get_nutrition_context:
+    '只读本消息自然日全部饮食记录、已生效饮食目标及剩余热量和三大营养额度。下一餐推荐依据这些真实数据；部分未知使用明确标记的暂估额度，建议食物不要作为已吃保存。',
   query_records: '读取指定日期真实记录，今天/昨天以本消息日期为准。',
   record_water: '保存用户明确喝过的水量，毫升。',
   record_food:
     '保存尚未记录的真实饮食。有食物种类与重量/体积/数量/碗/份等依据就按常见营养估算并保存，source=estimate，assumptions 说明采用份量与主要假设；用户说不清楚或让AI估算时采用常见份量，不索要热量、宏量或反复问碗大小。两份合计500g按总量500g，每份500g才乘2。真实标签用 source=label 按实际食用量换算；确实未知的营养填 null。已有同一次摄入用 edit_record 更正，不重记已保存水和食物；仅种类或实际摄入确有歧义才澄清一个关键问题。',
   record_body: '保存用户明确提供的身体指标，kg/cm/%。',
-  draft_target: '创建目标草案；只在用户确认后生效。',
+  draft_target:
+    '结合用户已给的身高、体重、目标、日常活动和训练水平创建个性化每日额度草案，不以固定默认代替判断。整套目标需完整保存饮水、热量、碳水、蛋白质和脂肪五项，宏量营养换算热量与总热量大致一致；缺少选填资料时说明合理估算假设，不反复追问或索要热量宏量数值。只设置单项时保留已有目标的其他项，未设置项可为 null。默认 effective_from 为本消息的今日，只创建草案，用户可在回复下方卡片确认并应用后生效。',
   draft_plan:
     '创建计划草案。多周重复安排优先使用 input.weekly 的起止日期和每个 weekday 的不同动作，只定义一周；0=周日，1=周一，…6=周六。weekly、repeat、days 三选一；有分阶段差异时保留按日期安排，未知重量或增量填 null。',
   confirm_proposal: '用户明确确认且草案唯一或通过 UI 指定时才确认。',
@@ -293,6 +297,8 @@ export async function executeTool(
         reference_local_date: ctx.reference_local_date,
         workout_session_id: ctx.workout_session_id,
       });
+    case 'get_nutrition_context':
+      return s.memory.nutritionContext(ctx.user_id, ctx.reference_local_date);
     case 'analyze_food_photo':
       invariant(
         request.attachment_ids?.includes(a.asset_id),

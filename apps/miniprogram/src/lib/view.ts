@@ -251,6 +251,7 @@ export function chatView(messages: any[], state?: any) {
       })),
       error: m.result?.error?.message || '',
       pending: ['pending', 'running'].includes(m.status),
+      showReply: !!m.result || ['pending', 'running'].includes(m.status),
     };
   });
 }

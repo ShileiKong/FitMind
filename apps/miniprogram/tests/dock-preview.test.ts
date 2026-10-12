@@ -214,6 +214,63 @@ describe.each(['tab', 'workout'])('%s coach preview', (entry) => {
     expect(d.data.preview.errors).toContain('等待网络恢复');
   });
 
+  it('lets the current long reply expand inside the dock and resets details for the next reply', async () => {
+    const { d } = await dock(entry);
+    const detail =
+      '先记下今天已吃的内容。\n\n' + '具体份量与记录说明。'.repeat(35);
+    c.data.messages = [
+      {
+        message_id: 'long-reply',
+        text: '帮我看今天的记录',
+        status: 'completed',
+        result: { assistant_text: '<think>private</think>' + detail },
+      },
+    ];
+    d.sync();
+    d.focusComposer();
+    expect(d.data.preview.fullAnswer).toBe(detail);
+    expect(d.data.preview.hasDetails).toBe(true);
+    expect(d.data.previewExpanded).toBe(false);
+    d.togglePreviewDetails();
+    expect(d.data.previewExpanded).toBe(true);
+    d.sync();
+    expect(d.data.previewExpanded).toBe(true);
+    d.previewScroll({ detail: { scrollTop: 180 } });
+    c.data.messages.push({
+      message_id: 'new-reply',
+      text: '下一条问题',
+      status: 'completed',
+      result: { assistant_text: '这是最新回复。' },
+    });
+    d.sync();
+    expect(d.data.preview.fullAnswer).toBe('这是最新回复。');
+    expect(d.data.previewExpanded).toBe(false);
+    expect(d.data.previewScrollTop).toBe(0);
+  });
+
+  it('keeps the latest empty running reply instead of showing an older completed answer', async () => {
+    const { d } = await dock(entry);
+    c.data.messages = [
+      {
+        message_id: 'old',
+        text: '之前的问题',
+        status: 'completed',
+        result: { assistant_text: '旧回答。' },
+      },
+      {
+        message_id: 'latest-running',
+        text: '正在处理的新问题',
+        status: 'running',
+        result: null,
+      },
+    ];
+    d.sync();
+    d.focusComposer();
+    expect(d.data.preview.messageId).toBe('latest-running');
+    expect(d.data.preview.pending).toBe(true);
+    expect(d.data.preview.answer).toBe('');
+  });
+
   it('clears the old scope preview and ignores a late completion after data changes', async () => {
     const { d } = await dock(entry);
     const run = c.agent.run.bind(c.agent);

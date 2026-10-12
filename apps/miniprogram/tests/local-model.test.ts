@@ -49,7 +49,6 @@ describe('direct DeepSeek boundary', () => {
   );
   it.each([
     response({ role: 'assistant', content: null }),
-    response({ role: 'assistant', content: '截断输出' }, 'length'),
     response(
       { role: 'assistant', content: '输出失败' },
       'insufficient_system_resource',
@@ -80,6 +79,71 @@ describe('direct DeepSeek boundary', () => {
       });
     },
   );
+
+  it('allows a structured response larger than the old output budget', async () => {
+    const text = '计划说明'.repeat(1000);
+    const model = new DeepSeekClient(
+      {
+        request: (options: any) => {
+          queueMicrotask(() =>
+            options.success(
+              response(
+                { role: 'assistant', content: text },
+                options.data.max_tokens < 8192 ? 'length' : 'stop',
+              ),
+            ),
+          );
+          return { abort() {} };
+        },
+      },
+      { api_key: 'secret-test-key', model: 'deepseek-flash' },
+    );
+    expect((await model.next(input)).assistant_text).toBe(text);
+  });
+
+  it('reports length truncation separately and drops incomplete tool arguments', async () => {
+    const error = await make(
+      response(
+        {
+          role: 'assistant',
+          content: '未完成的计划',
+          tool_calls: [
+            {
+              id: 'unfinished',
+              type: 'function',
+              function: { name: 'draft_plan', arguments: '{"input":' },
+            },
+          ],
+        },
+        'length',
+      ),
+    )
+      .next(input)
+      .catch((error) => error);
+    expect(error).toMatchObject({ code: 'MODEL_TRUNCATED', retryable: true });
+    expect(error.message).toContain('过长');
+    expect(error.message).toContain('已保存');
+  });
+
+  it('reports a background interruption as recoverable without echoing platform diagnostics', async () => {
+    const model = new DeepSeekClient(
+      {
+        request: (options: any) => {
+          queueMicrotask(() =>
+            options.fail({
+              errMsg: 'request:fail interrupted secret-test-key',
+            }),
+          );
+          return { abort() {} };
+        },
+      },
+      { api_key: 'secret-test-key', model: 'deepseek-flash' },
+    );
+    const error = await model.next(input).catch((error) => error);
+    expect(error).toMatchObject({ code: 'MODEL_INTERRUPTED', retryable: true });
+    expect(error.message).toContain('前台');
+    expect(JSON.stringify(error)).not.toContain('secret-test-key');
+  });
 
   it('bounds an adapter that never calls back and ignores its late tool response', async () => {
     vi.useFakeTimers();

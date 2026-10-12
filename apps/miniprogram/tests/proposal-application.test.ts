@@ -153,16 +153,29 @@ describe('direct proposal application', () => {
     await c.refresh();
     expect(c.data.plans[0].status).toBe('draft');
   });
-  it('routes a successful confirmation from the chat screen directly to Today', async () => {
-    const { c, target } = await setup();
-    vi.stubGlobal('getCurrentPages', () => [{ route: 'pages/chat/index' }]);
-    const { proposalActions } = await import('../src/lib/proposal-actions');
-    await proposalActions.confirmProposal.call(
-      screen(c),
-      event('target', target),
-    );
-    expect(wx.switchTab).toHaveBeenCalledWith({ url: '/pages/today/index' });
-  });
+  it.each(['pages/chat/index', 'pages/onboarding/index'])(
+    'keeps the conversation open on %s after confirming and refreshes the applied card and Today budget',
+    async (route) => {
+      const { c, target, message } = await setup();
+      vi.stubGlobal('getCurrentPages', () => [{ route }]);
+      await c.mutate('/records', { kind: 'water', amount_ml: 300 });
+      const { proposalActions } = await import('../src/lib/proposal-actions');
+      const p = screen(c);
+      await proposalActions.confirmProposal.call(p, event('target', target));
+      expect(p.data.error).toBe('');
+      expect(c.data.summary.water_ml).toMatchObject({
+        target: 2500,
+        remaining: 2200,
+      });
+      expect(chatView([message], c.data)[0].proposals[0]).toMatchObject({
+        statusLabel: '已应用',
+        canConfirm: false,
+        timingHint: '已生效 · 2026-10-11 起',
+      });
+      expect(wx.switchTab).not.toHaveBeenCalled();
+      expect(wx.navigateTo).not.toHaveBeenCalled();
+    },
+  );
   it('ignores repeated taps while applying and never activates an already applied card again', async () => {
     const { c, target } = await setup();
     const { proposalActions } = await import('../src/lib/proposal-actions');

@@ -59,11 +59,16 @@ export const proposalActions: Record<
       },
       '已应用到今日',
     );
+    // Confirmation cards keep their conversation open; detail editors retain
+    // their existing completion path back to the daily dashboard.
     if (
       result &&
       client() === c &&
       c.storageKey === scope &&
-      getCurrentPages().at(-1)?.route !== 'pages/today/index'
+      !this._dockClient &&
+      ['pages/editor/index', 'pages/plan-detail/index'].includes(
+        getCurrentPages().at(-1)?.route || '',
+      )
     )
       wx.switchTab({ url: '/pages/today/index' });
     return result;

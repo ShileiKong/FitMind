@@ -3,8 +3,8 @@
   <text class="muted" wx:if="{{!messages.length}}">从一条记录开始。你可以说“喝了 300 毫升水”，或“卧推 40 公斤 10 次，有些吃力”。</text>
   <view class="chat-message" wx:for="{{messages}}" wx:key="message_id">
     <view class="chat-user"><text>{{item.text}}</text><text class="muted">{{item.createdLabel}}</text></view>
-    <view class="card" wx:if="{{item.result}}">
-      <view class="coach-message-header"><view wx:if="{{skin === 'deepseek'}}" class="coach-avatar"><image src="/assets/skins/deepseek-mascot.png" mode="aspectFill"/></view><text class="eyebrow">{{skin === 'deepseek' ? '大肥鱼' : 'FitMind'}} · {{item.result.status === 'completed' ? '教练' : '回复未完成'}}</text></view>
+    <view class="card" wx:if="{{item.showReply}}">
+      <view class="coach-message-header"><view wx:if="{{skin === 'deepseek'}}" class="coach-avatar"><image src="/assets/skins/deepseek-mascot.png" mode="aspectFill"/></view><text class="eyebrow">{{skin === 'deepseek' ? '大肥鱼' : 'FitMind'}} · {{item.pending ? '正在处理' : item.result.status === 'completed' ? '教练' : '回复未完成'}}</text></view>
       <view class="chat-reply" wx:if="{{!item.error && item.answer}}"><text class="chat-answer">{{expanded[item.message_id] ? item.answer : item.shortAnswer}}</text><button class="secondary" wx:if="{{item.long}}" data-id="{{item.message_id}}" bindtap="expand">{{expanded[item.message_id] ? '收起详情' : '展开详情'}}</button></view>
       <text class="receipt" wx:for="{{item.receipts}}" wx:for-item="receipt" wx:key="index">{{receipt.label}}</text>
       <text class="error" wx:for="{{item.errors}}" wx:for-item="messageError" wx:key="index">{{messageError}}</text>
@@ -16,5 +16,6 @@
   <view class="row wrap"><view wx:for="{{attachments}}" wx:key="id"><image class="photo-preview" src="{{item.path}}" mode="aspectFill"/><button class="text-button" data-id="{{item.id}}" bindtap="removePhoto" disabled="{{busy}}">移除照片</button></view></view>
   <view class="card" wx:if="{{recording}}"><view class="green">正在录音 · 最长 60 秒</view><view class="muted">停止后先转写，确认文字再发送。</view><view class="buttons"><button bindtap="voice">停止并转写</button><button class="secondary" bindtap="cancelRecording">取消</button></view></view>
   <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput"/>
+  <view id="chat-bottom" aria-hidden="true"/>
 </view>
 <view class="chat-composer skin-{{skin}}" style="{{skinStyle}}"><composer id="composer" value="{{draft}}" has-attachments="{{attachments.length > 0}}" connected="{{connected}}" capabilities="{{capabilities}}" busy="{{busy}}" recording="{{recording}}" bind:input="input" bind:send="send" bind:photo="photo" bind:voice="voice" bind:conversation="openConversation"/><view class="muted" wx:if="{{busy}}">AI 正在处理，完成后会显示记录回执。</view></view>

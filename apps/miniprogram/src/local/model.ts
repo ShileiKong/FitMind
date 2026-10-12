@@ -67,7 +67,7 @@ export class DeepSeekClient {
               ...input.transcript,
             ],
             thinking: { type: 'disabled' },
-            max_tokens: 2048,
+            max_tokens: 8192,
             stream: false,
             ...(input.tools.length
               ? {
@@ -105,6 +105,13 @@ export class DeepSeekClient {
                   : response.data;
               const choice = json?.choices?.[0];
               const message = choice?.message;
+              if (choice?.finish_reason === 'length')
+                throw new DomainError(
+                  'MODEL_TRUNCATED',
+                  'AI 回复过长，未生成完整内容。已保存的结果可查看，请恢复或缩小计划范围后重试',
+                  502,
+                  true,
+                );
               valid(
                 message &&
                   (message.content == null ||
@@ -213,6 +220,20 @@ export class DeepSeekClient {
                   'AI 域名未配置，请在微信开发者平台把 https://api.deepseek.com 添加到 request 合法域名',
                   502,
                   false,
+                ),
+              );
+              return;
+            }
+            if (
+              typeof error?.errMsg === 'string' &&
+              /\binterrupted\b/i.test(error.errMsg)
+            ) {
+              fail(
+                new DomainError(
+                  'MODEL_INTERRUPTED',
+                  'AI 连接被微信中断，请回到小程序前台恢复这条消息；已保存的记录仍可查看',
+                  502,
+                  true,
                 ),
               );
               return;

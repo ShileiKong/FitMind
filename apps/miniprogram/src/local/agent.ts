@@ -317,7 +317,10 @@ export class LocalAgent {
         '\n手机本地版仅支持文字。计划的weekly_blocks使用一份动作模板，days保存每个日期、训练日ID与按模板顺序对应的exercise_ids；single_days保存独立安排。修改需保留其他日期和差异。当前真实状态：' +
         JSON.stringify(this.filterDeleted(message.context_snapshot, deleted)),
       transcript: [...prior, ...transcript],
-      tools: agentTools.filter((t) => t.name !== 'analyze_food_photo'),
+      tools:
+        message.round >= 5
+          ? []
+          : agentTools.filter((t) => t.name !== 'analyze_food_photo'),
     };
   }
   private async callTool(message: Message, call: ToolCall, slot: number) {
@@ -378,7 +381,7 @@ export class LocalAgent {
   }
   private async execute(message: Message): Promise<ChatResult> {
     // Each recovery attempt gets a fresh wall-clock budget; logical record dates stay frozen.
-    const deadline = Date.now() + 180000;
+    const deadline = Date.now() + 360000;
     const remaining = () => {
       const budget = deadline - Date.now();
       if (budget <= 0)
@@ -410,9 +413,17 @@ export class LocalAgent {
       );
       message.status = 'running';
       this.save(message);
-      while (message.round < 5) {
+      // Five tool rounds may be followed by one text-only final response.
+      while (message.round <= 5) {
         remaining();
         if (!message.pending) {
+          if (message.mode === 'model') {
+            message.context_snapshot.nutrition_context =
+              await this.core.services.memory.nutritionContext(
+                user,
+                message.ctx.reference_local_date,
+              );
+          }
           message.pending =
             message.mode === 'rules'
               ? await this.ruleStep(message)
@@ -434,6 +445,12 @@ export class LocalAgent {
           message.pending = null;
           break;
         }
+        invariant(
+          message.round < 5,
+          'TOOL_LIMIT',
+          '本条消息处理已达到上限，请查看回执后发送新消息',
+          429,
+        );
         const outputs: any[] = [];
         for (let i = 0; i < step.tool_calls.length; i++) {
           remaining();
@@ -547,6 +564,7 @@ export class LocalAgent {
           !c.result?.tool_error &&
           ![
             'get_context',
+            'get_nutrition_context',
             'query_records',
             'query_history',
             'query_trends',

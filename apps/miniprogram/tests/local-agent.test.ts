@@ -115,7 +115,33 @@ async function workout(h: ReturnType<typeof setup>) {
 }
 
 describe('phone local agent', () => {
-  it('bounds a multi-round attempt to 180 seconds and resumes its saved receipt with a fresh budget', async () => {
+  it('finishes a 100-second tool request followed by a 100-second final reply', async () => {
+    vi.useFakeTimers();
+    const h = setup();
+    h.agent.saveModel({ api_key: 'key', model: 'deepseek-flash' });
+    let calls = 0;
+    h.platform.request = (options: any) => {
+      const call = calls++;
+      const timer = setTimeout(
+        () =>
+          options.success(
+            call === 0
+              ? answer(null, [tool('record_water', water)])
+              : answer('已保存'),
+          ),
+        100000,
+      );
+      return { abort: () => clearTimeout(timer) };
+    };
+    const pending = h.agent.run(msg('250ml水'));
+    await vi.advanceTimersByTimeAsync(200001);
+    const result = await pending;
+    expect(result.status).toBe('completed');
+    expect(result.record_receipts).toHaveLength(1);
+    expect(result.assistant_text).toBe('已保存');
+  });
+
+  it('bounds a multi-round attempt to 360 seconds and resumes its saved receipt with a fresh budget', async () => {
     vi.useFakeTimers();
     const h = setup();
     h.agent.saveModel({ api_key: 'key', model: 'deepseek-flash' });
@@ -130,9 +156,11 @@ describe('phone local agent', () => {
           options.success(
             call === 0
               ? answer(null, [tool('record_water', water)])
-              : answer('已保存'),
+              : call < 3
+                ? answer(null, [tool('get_context', {}, 'context-' + call)])
+                : answer('已保存'),
           ),
-        call < 2 ? 100000 : 0,
+        call < 4 ? 100000 : 0,
       );
       return {
         abort() {
@@ -144,24 +172,86 @@ describe('phone local agent', () => {
       result = value;
       return value;
     });
-    await vi.advanceTimersByTimeAsync(180001);
+    await vi.advanceTimersByTimeAsync(360001);
     expect(result).toMatchObject({
       status: 'partial',
       error: { code: 'MODEL_TIMEOUT', retryable: true },
     });
     expect((await pending).record_receipts).toHaveLength(1);
-    expect(timeouts).toEqual([120000, 80000]);
+    expect(timeouts).toEqual([120000, 120000, 120000, 60000]);
     const recovering = h.agent.recover('message-1');
     await vi.advanceTimersByTimeAsync(1);
     expect(await recovering).toMatchObject({
       status: 'completed',
       summary: { water_ml: { known_total: 250 } },
     });
-    expect(timeouts).toEqual([120000, 80000, 120000]);
+    expect(timeouts).toEqual([120000, 120000, 120000, 60000, 120000]);
     expect(
       (await h.core.request('GET', '/records?limit=100')).items,
     ).toHaveLength(1);
   });
+
+  it('allows a text-only final reply after five tool rounds', async () => {
+    const h = setup([
+      answer(null, [tool('record_water', water)]),
+      ...Array.from({ length: 4 }, (_, i) =>
+        answer(null, [tool('get_context', {}, 'context-' + i)]),
+      ),
+      answer('已记录250毫升水。'),
+    ]);
+    h.agent.saveModel({ api_key: 'key', model: 'deepseek-flash' });
+    const result = await h.agent.run(msg('250ml水'));
+    expect(result).toMatchObject({
+      status: 'completed',
+      assistant_text: '已记录250毫升水。',
+    });
+    expect(result.record_receipts).toHaveLength(1);
+    expect(h.requests).toHaveLength(6);
+    expect(h.requests[5].data.tools).toBeUndefined();
+  });
+
+  it('rejects a tool returned during the text-only final reply without another write', async () => {
+    const h = setup([
+      ...Array.from({ length: 5 }, (_, i) =>
+        answer(null, [tool('get_context', {}, 'context-' + i)]),
+      ),
+      answer(null, [tool('record_water', water, 'forbidden-final')]),
+    ]);
+    h.agent.saveModel({ api_key: 'key', model: 'deepseek-flash' });
+    const result = await h.agent.run(msg('查询后总结'));
+    expect(result).toMatchObject({
+      status: 'failed',
+      error: { code: 'TOOL_LIMIT', retryable: false },
+    });
+    expect(h.requests).toHaveLength(6);
+    expect(h.requests[5].data.tools).toBeUndefined();
+    expect((await h.core.request('GET', '/records?limit=100')).items).toEqual(
+      [],
+    );
+  });
+
+  it.each(['{}', '{"amount_ml":'])(
+    'does not execute any tool from a truncated model step: %s',
+    async (args) => {
+      const truncated = answer(null, [
+        tool('record_water', water),
+        {
+          ...tool('record_water', water, 'unfinished'),
+          function: { name: 'record_water', arguments: args },
+        },
+      ]);
+      truncated.data.choices[0].finish_reason = 'length';
+      const h = setup([truncated]);
+      h.agent.saveModel({ api_key: 'key', model: 'deepseek-flash' });
+      expect(await h.agent.run(msg('250ml水'))).toMatchObject({
+        status: 'failed',
+        error: { code: 'MODEL_TRUNCATED', retryable: true },
+      });
+      expect((await h.core.request('GET', '/records?limit=100')).items).toEqual(
+        [],
+      );
+    },
+  );
   it('uses the official direct model boundary and returns saved receipts without reasoning or key in stored data', async () => {
     const h = setup([
       answer(null, [tool('record_water', water)]),
@@ -181,7 +271,7 @@ describe('phone local agent', () => {
       data: {
         model: 'deepseek-flash',
         thinking: { type: 'disabled' },
-        max_tokens: 2048,
+        max_tokens: 8192,
       },
     });
     expect(h.requests[0].data.messages[0].content).toContain('设备当前时间');

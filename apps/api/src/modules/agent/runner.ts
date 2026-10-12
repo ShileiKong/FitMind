@@ -197,6 +197,11 @@ export class AgentRunner {
           );
           const context = {
             ...state.context_snapshot,
+            // Refresh the day's ledger before every answer, including writes in this turn.
+            nutrition_context: await this.app.services.memory.nutritionContext(
+              ctx.user_id,
+              ctx.reference_local_date,
+            ),
             memories: state.context_snapshot.memories.filter(
               (m: any) => !m.source_ids.some((id: string) => deleted.has(id)),
             ),
