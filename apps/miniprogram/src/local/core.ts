@@ -571,11 +571,51 @@ export class LocalCore {
     throw new DomainError('NOT_FOUND', '本地接口不存在', 404);
   }
   exportBackup(): string {
-    return this.store.exportBackup();
+    const backup = this.store.parseBackup(this.store.exportBackup());
+    this.normalizeMedia(backup);
+    return JSON.stringify(backup);
+  }
+  private normalizeMedia(backup: LocalBackup) {
+    const timezone =
+      backup.entities.find((row) => row.kind === 'profile')?.value.timezone ||
+      'Asia/Shanghai';
+    for (const row of backup.entities) {
+      if (row.kind !== 'media') continue;
+      const value = row.value;
+      backupValid(
+        Object.keys(value).every((key) =>
+          [
+            'id',
+            'version',
+            'kind',
+            'mime_type',
+            'size_bytes',
+            'created_at',
+            'local_date',
+            'path',
+            'extension',
+          ].includes(key),
+        ),
+      );
+      timestamp(value.created_at);
+      // Legacy desktop paths are inert; never persist or read them on the phone.
+      row.value = {
+        id: value.id,
+        version: value.version,
+        kind: value.kind,
+        mime_type: value.mime_type,
+        size_bytes: value.size_bytes,
+        created_at: value.created_at,
+        local_date:
+          value.local_date ??
+          getTimeContext(() => new Date(value.created_at), timezone).local_date,
+      };
+    }
   }
   private validateBackup(text: string): LocalBackup {
     const backup = this.store.parseBackup(text);
     try {
+      this.normalizeMedia(backup);
       backupValid(
         backup.operations.every(
           (operation) => operation.user_id === 'personal',
@@ -619,6 +659,42 @@ export class LocalCore {
           validateTimezone(value.timezone);
           timestamp(value.recorded_at);
           nullableTimestamp(value.undone_at);
+        } else if (kind === 'media') {
+          backupValid(
+            Object.keys(value).every((key) =>
+              [
+                'id',
+                'version',
+                'kind',
+                'mime_type',
+                'size_bytes',
+                'created_at',
+                'local_date',
+              ].includes(key),
+            ) &&
+              ['image', 'audio'].includes(value.kind) &&
+              (value.kind === 'image'
+                ? ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+                : [
+                    'audio/mp4',
+                    'audio/x-m4a',
+                    'video/mp4',
+                    'audio/mpeg',
+                    'audio/mp3',
+                    'audio/wav',
+                    'audio/x-wav',
+                    'audio/webm',
+                    'video/webm',
+                  ]
+              ).includes(value.mime_type) &&
+              Number.isInteger(value.size_bytes) &&
+              value.size_bytes > 0 &&
+              value.size_bytes <=
+                (value.kind === 'image' ? 10 : 20) * 1024 * 1024 &&
+              /^[a-zA-Z0-9_-]{1,150}$/.test(value.id),
+          );
+          timestamp(value.created_at);
+          validateDate(value.local_date);
         } else if (kind === 'target') {
           checked(
             TargetDraftSchema,
@@ -929,11 +1005,9 @@ export class LocalCore {
     return backup;
   }
   inspectBackup(text: string) {
-    this.validateBackup(text);
-    return this.store.inspectBackup(text);
+    return this.store.inspectBackup(JSON.stringify(this.validateBackup(text)));
   }
   importBackup(text: string) {
-    this.validateBackup(text);
-    return this.store.importBackup(text);
+    return this.store.importBackup(JSON.stringify(this.validateBackup(text)));
   }
 }

@@ -1,5 +1,5 @@
 <view class="page skin-{{skin}}" style="{{skinStyle}}">
-  <view><view class="eyebrow">手机本地版 · 0.3.6</view><view class="title">你的私人 Agent</view><view class="subtitle">记录和计划保存在这部手机，无需电脑或服务器。</view></view>
+  <view><view class="eyebrow">手机本地版 · 0.3.7</view><view class="title">你的私人 Agent</view><view class="subtitle">记录和计划保存在这部手机，无需电脑或服务器。</view></view>
   <view class="error" wx:if="{{error}}">{{error}}</view>
   <view class="card">
     <view class="row between"><view class="section">AI 教练</view><view class="badge">{{keySaved ? '已配置' : '本地记录'}}</view></view>
@@ -9,7 +9,10 @@
     <button class="button" bindtap="saveModel" disabled="{{busy}}">保存 AI 设置</button>
     <button class="button secondary" wx:if="{{keySaved}}" bindtap="testModel" disabled="{{busy}}">测试 AI 连接</button>
     <button class="button secondary" wx:if="{{keySaved}}" bindtap="clearModel" disabled="{{busy}}">移除 Key，使用本地记录助手</button>
-    <view class="muted">未配置 AI 时，仍可手动操作，也可说“喝了300毫升水”。文字 {{textStatus}} · 图片和录音识别暂未配置。</view>
+    <view class="muted">文字 {{textStatus}} · 照片识别 {{visionStatus}} · 语音 {{transcriptionStatus}}。已配置表示配置存在，调用结果以实际使用为准。</view>
+    <view class="muted">DeepSeek Flash 可识别餐食照片和营养标签。识别后核对或编辑份量、营养值，确认保存才记入饮食。</view>
+    <view class="muted">语音按钮提示使用手机键盘的麦克风听写，文字可编辑后再发送；小程序不录音、不上传音频。没有麦克风时可检查系统或输入法的听写设置，也可直接键入。</view>
+    <view class="muted">未配置 AI 时，仍可手动操作，也可输入“喝了300毫升水”。</view>
   </view>
   <view class="card">
     <view class="section">日期与提醒</view>
@@ -22,15 +25,16 @@
   </view>
   <view class="card">
     <view class="section">本地数据与备份</view>
-    <view class="muted">数据不会自动同步到电脑版或其他手机。导出 JSON 文件并保存；更换手机后可导入恢复。微信清理小程序数据后，需用备份恢复。</view>
+    <view class="muted">数据不会自动同步到电脑版或其他手机。导出 JSON 文件并保存；更换手机后可导入恢复。业务备份含照片元数据，不含原图或 AI Key。微信清理小程序数据后，需用备份恢复。</view>
+    <view class="muted">照片单张上限 5 MiB，最多缓存 30 张或 40 MiB；超过上限清理最旧照片，已保存的饮食记录保留。</view>
     <button class="button secondary" bindtap="exportData" disabled="{{busy}}">导出并保存备份</button>
     <button class="button secondary" bindtap="importData" disabled="{{busy}}">从聊天文件导入备份</button>
-    <view class="muted">导入会先核对备份，确认后才替换当前数据。</view>
+    <view class="muted">导入会先核对备份，确认后才替换当前数据并清理照片缓存，AI Key 保留。</view>
     <view class="line"/>
     <button class="button secondary" bindtap="restartSetup" disabled="{{busy || loading}}">重新开始首次引导</button>
-    <view class="muted">只重置教练资料，保留已有记录、目标和计划。</view>
+    <view class="muted">重置教练资料并清理照片缓存，保留已有记录、目标、计划和 AI Key。</view>
     <button class="button secondary danger-button" bindtap="clearData" disabled="{{busy || loading}}">清空本地数据</button>
-    <view class="muted">清空后从首次设置开始。AI Key 保留；记录无法撤销删除，请先备份。</view>
+    <view class="muted">清空记录和照片缓存后从首次设置开始。AI Key 保留；记录无法撤销删除，请先备份。</view>
   </view>
   <pending-inputs items="{{pending}}" busy="{{busy}}" bind:retry="retryInput" bind:discard="discardInput"/>
 </view>

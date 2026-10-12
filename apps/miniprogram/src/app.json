@@ -13,7 +13,8 @@
     "pages/day/index",
     "pages/food/index",
     "pages/plan-detail/index",
-    "pages/nutrient-detail/index"
+    "pages/nutrient-detail/index",
+    "pages/photo-review/index"
   ],
   "window": {
     "navigationBarTitleText": "FitMind",

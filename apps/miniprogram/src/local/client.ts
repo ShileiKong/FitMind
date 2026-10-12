@@ -1,12 +1,16 @@
 import { MiniClient, MiniError } from '../lib/client';
 import { LocalCore } from './core';
 import { LocalAgent } from './agent';
+import { LocalMedia } from './media';
+import { LocalVision, supportsVision } from './vision';
 
 /** The existing page contract, backed by this phone rather than HTTP. */
 export class LocalClient extends MiniClient {
   readonly isLocal = true;
   readonly core: LocalCore;
   readonly agent: LocalAgent;
+  readonly media: LocalMedia;
+  readonly vision: LocalVision;
   private localGeneration = 0;
   private activeRequests = 0;
   private localRefresh: Promise<void> | null = null;
@@ -18,6 +22,11 @@ export class LocalClient extends MiniClient {
     this.settings = null;
     this.core = new LocalCore(localPlatform, clock);
     this.agent = new LocalAgent(this.core, localPlatform, clock);
+    this.media = new LocalMedia(localPlatform, this.core);
+    this.vision = new LocalVision(
+      localPlatform,
+      () => this.agent.modelSettings,
+    );
   }
   override get connected() {
     return true;
@@ -58,8 +67,11 @@ export class LocalClient extends MiniClient {
       text: !!this.agent.modelSettings.api_key,
       provider: this.agent.modelSettings.api_key ? 'deepseek' : 'local-rules',
       demo: false,
-      vision: false,
+      vision:
+        !!this.agent.modelSettings.api_key &&
+        supportsVision(this.agent.modelSettings.model),
       transcription: false,
+      voice_input: 'keyboard',
     };
   }
   override async request(
@@ -73,7 +85,12 @@ export class LocalClient extends MiniClient {
     try {
       let result: any;
       if (path === '/capabilities') result = this.capabilities;
-      else if (path === '/messages') result = this.agent.messages();
+      else if (method === 'GET' && /^\/media\/[^/]+$/.test(path))
+        result = this.media.asset(decodeURIComponent(path.split('/')[2]));
+      else if (method === 'POST' && path === '/nutrition/analyze') {
+        const image = await this.media.imageData(body?.asset_id);
+        result = await this.vision.analyze(image, body);
+      } else if (path === '/messages') result = this.agent.messages();
       else if (method === 'POST' && path === '/chat')
         result = await this.agent.run(body);
       else if (method === 'POST' && /^\/messages\/[^/]+\/recover$/.test(path))
@@ -103,11 +120,27 @@ export class LocalClient extends MiniClient {
       this.activeRequests--;
     }
   }
-  override async upload(): Promise<any> {
-    throw new MiniError(
-      'MEDIA_NOT_CONFIGURED',
-      '当前使用文字 AI，请用文字描述食物或手动填写营养标签。',
-    );
+  override async upload(
+    path: string,
+    filePath: string,
+    key?: string,
+  ): Promise<any> {
+    this.activeRequests++;
+    try {
+      return await this.media.upload(
+        path,
+        filePath,
+        key ?? 'image-' + this.core.store.id(),
+      );
+    } catch (error: any) {
+      throw new MiniError(
+        error.code || 'MEDIA_ERROR',
+        error.message || '照片无法保存，请重试。',
+        !!error.retryable,
+      );
+    } finally {
+      this.activeRequests--;
+    }
   }
   override refresh(): Promise<void> {
     if (this.localRefresh) return this.localRefresh;
@@ -180,6 +213,7 @@ export class LocalClient extends MiniClient {
     const oldScope = this.storageKey;
     this.core.importBackup(text);
     this.localGeneration++;
+    this.media.clearObsolete();
     const keys: string[] =
       this.localPlatform.getStorageInfoSync?.().keys ??
       ['pending', 'draft', 'attachments'].map((name) => oldScope + '.' + name);

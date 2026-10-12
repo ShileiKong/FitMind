@@ -1,0 +1,36 @@
+<view class="page photo-review skin-{{skin}}" style="{{skinStyle}}">
+  <text class="eyebrow">{{mode === 'label' ? 'NUTRITION / LABEL' : 'NUTRITION / PHOTO'}}</text>
+  <view class="title">{{mode === 'label' ? '核对营养表。' : '核对这一餐。'}}</view>
+  <view class="subtitle">{{mode === 'label' ? '填写真实食用量，按标签比例计算。' : '以下营养是所填整份食物的合计，并标明估算依据。'}}</view>
+  <image wx:if="{{previewPath}}" class="review-photo" src="{{previewPath}}" mode="widthFix"/>
+  <view class="error" wx:if="{{error}}">{{error}}</view>
+  <view class="muted" wx:if="{{busy}}">{{ready || retryPending ? '正在确认记录，请稍候…' : '正在识别照片，尚未记录饮食…'}}</view>
+  <view class="card" wx:if="{{!recordId && loaded}}">
+    <view class="section" wx:if="{{question}}">{{question}}</view>
+    <view class="field"><text class="label">补充食物、份量或照片说明</text><textarea value="{{descriptionText}}" bindinput="description" disabled="{{busy || retryPending}}" maxlength="2000" placeholder="例如：米饭半碗，鸡肉150克，整盘吃完" adjust-position="{{true}}"/></view>
+    <button class="secondary" bindtap="analyze" loading="{{busy && !ready}}" disabled="{{busy || retryPending}}">{{ready ? '按补充说明重新识别' : '识别照片'}}</button>
+  </view>
+  <view class="card" wx:if="{{ready && !recordId}}">
+    <view class="field"><text class="label">食品名称</text><input value="{{form.name}}" data-field="name" bindinput="input" disabled="{{busy || retryPending}}"/></view>
+    <picker mode="date" value="{{date}}" bindchange="date" disabled="{{busy || retryPending}}">记录日期 · {{date}} ▾</picker>
+    <view wx:if="{{mode === 'meal'}}">
+      <view class="field"><text class="label">这份食物的食用量</text><input value="{{form.portion}}" data-field="portion" bindinput="input" disabled="{{busy || retryPending}}"/></view>
+      <view class="field spaced"><text class="label">估算依据</text><textarea value="{{form.assumptions}}" data-field="assumptions" bindinput="input" disabled="{{busy || retryPending}}" maxlength="2000"/></view>
+    </view>
+    <view class="form-grid" wx:if="{{mode === 'label'}}">
+      <view class="field"><text class="label">标签基准量</text><input type="digit" value="{{form.basis}}" data-field="basis" bindinput="input" disabled="{{busy || retryPending}}"/><picker range="{{units}}" value="{{basisUnitIndex}}" data-field="basis_unit" bindchange="unit" disabled="{{busy || retryPending}}">{{units[basisUnitIndex]}} ▾</picker></view>
+      <view class="field"><text class="label">实际食用量（必填）</text><input type="digit" value="{{form.consumed}}" data-field="consumed" bindinput="input" placeholder="请填写实际吃了多少" disabled="{{busy || retryPending}}"/><picker range="{{units}}" value="{{consumedUnitIndex}}" data-field="consumed_unit" bindchange="unit" disabled="{{busy || retryPending}}">{{units[consumedUnitIndex]}} ▾</picker></view>
+    </view>
+    <text class="muted">{{mode === 'label' ? '以下是标签基准量对应的营养，保存时按实际食用量换算。未知留空。' : '以下是上方食用量的整份营养合计。未知留空。'}}</text>
+    <view class="form-grid">
+      <view class="field"><text class="label">热量 kcal</text><input type="digit" value="{{form.calories}}" data-field="calories" bindinput="input" placeholder="未知留空" disabled="{{busy || retryPending}}"/></view>
+      <view class="field"><text class="label">碳水 g</text><input type="digit" value="{{form.carbs}}" data-field="carbs" bindinput="input" placeholder="未知留空" disabled="{{busy || retryPending}}"/></view>
+      <view class="field"><text class="label">蛋白质 g</text><input type="digit" value="{{form.protein}}" data-field="protein" bindinput="input" placeholder="未知留空" disabled="{{busy || retryPending}}"/></view>
+      <view class="field"><text class="label">脂肪 g</text><input type="digit" value="{{form.fat}}" data-field="fat" bindinput="input" placeholder="未知留空" disabled="{{busy || retryPending}}"/></view>
+    </view>
+    <view class="portion-warning" wx:if="{{portionChanged}}"><text>份量已改变。请重新识别，或修改以上整份合计并核对。</text><checkbox-group bindchange="manualTotals"><label><checkbox value="checked" checked="{{manualTotalsChecked}}" disabled="{{busy || retryPending}}"/>我已修改并核对新份量的整份营养合计</label></checkbox-group></view>
+  </view>
+  <view class="card" wx:if="{{recordId}}"><view class="green">{{receipt}}</view><text class="muted record-id">记录编号 · {{recordId}}</text><text class="muted">可在今日记录中查看或更正。</text></view>
+  <view class="card" wx:if="{{retryPending && !recordId}}"><text>保存回执尚未确认。重试将沿用第一次确认的内容，不会保存编辑后的另一份记录。</text><text wx:if="{{originalConfirmation}}">{{originalConfirmation.name}} · {{originalConfirmation.date}}</text><text class="muted" wx:if="{{originalConfirmation}}">{{originalConfirmation.nutrition}}</text></view>
+  <view class="review-actions"><button wx:if="{{!recordId}}" bindtap="confirm" disabled="{{busy || (!ready && !retryPending)}}" loading="{{busy && (ready || retryPending)}}">{{retryPending ? '重试原确认输入' : '确认并记录饮食'}}</button><button class="secondary" bindtap="cancel" disabled="{{busy}}">{{recordId ? '完成' : '取消，暂不记录'}}</button></view>
+</view>

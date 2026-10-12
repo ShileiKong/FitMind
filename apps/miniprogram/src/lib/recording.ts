@@ -57,6 +57,20 @@ function manager() {
 }
 export function voice(view: any) {
   if (view.data.busy) return;
+  const c = client();
+  if (
+    ('isLocal' in c && c.isLocal) ||
+    view.data.capabilities?.voice_input === 'keyboard'
+  ) {
+    view.setData({ error: '' });
+    view.selectComponent?.('#composer')?.focusInput?.();
+    wx.showToast({
+      title: '点击键盘麦克风听写，编辑后发送',
+      icon: 'none',
+      duration: 3000,
+    });
+    return;
+  }
   const state = registry();
   const owner = state.owner;
   if (owner) {
@@ -77,7 +91,7 @@ export function voice(view: any) {
   const r = manager();
   state.owner = {
     view,
-    scope: client().storageKey,
+    scope: c.storageKey,
     cancelled: false,
     stopping: false,
   };

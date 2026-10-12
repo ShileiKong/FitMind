@@ -30,6 +30,10 @@ Component(themedComponent({
     },
   },
   methods: {
+    focusInput() {
+      this.setData({ focus: false });
+      wx.nextTick(() => this.setData({ focus: true }));
+    },
     focus() {
       this.triggerEvent('focus');
     },

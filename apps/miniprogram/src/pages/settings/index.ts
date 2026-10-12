@@ -13,8 +13,8 @@ Page(
       notifications_enabled: true,
       wechat: null,
       textStatus: '未配置',
-      visionStatus: '未配置',
-      transcriptionStatus: '未配置',
+      visionStatus: '需 DeepSeek Flash 和 Key',
+      transcriptionStatus: '手机键盘听写',
     },
     async render(c: any) {
       if (this._formScope !== c.storageKey) {
@@ -43,10 +43,14 @@ Page(
           : c.data.capabilities?.text
             ? '已配置'
             : '本地记录助手',
-        visionStatus: c.data.capabilities?.vision ? '已配置' : '未配置',
+        visionStatus: c.data.capabilities?.vision
+          ? '已配置'
+          : '需 DeepSeek Flash 和 Key',
         transcriptionStatus: c.data.capabilities?.transcription
           ? '已配置'
-          : '未配置',
+          : c.data.capabilities?.voice_input === 'keyboard'
+            ? '手机键盘听写'
+            : '未配置',
       });
     },
     input(e: any) {
@@ -130,8 +134,8 @@ Page(
             title: mode === 'all' ? '清空本地数据' : '重新开始首次引导',
             content:
               mode === 'all'
-                ? '将删除这部手机中的记录、目标、计划、训练、对话、记忆和个人资料，无法撤销。建议先导出备份。AI Key 和已导出的备份文件保留。'
-                : '重置教练资料和引导进度，保留饮食、饮水、身体记录、目标、计划、训练、对话、提醒设置和 AI Key。已有体重记录仍可带入核对。',
+                ? '将删除这部手机中的记录、目标、计划、训练、对话、记忆、个人资料和照片缓存，无法撤销。建议先导出备份。AI Key 和已导出的备份文件保留。'
+                : '重置教练资料和引导进度，清理照片缓存；保留饮食、饮水、身体记录、目标、计划、训练、对话、提醒设置和 AI Key。已有体重记录仍可带入核对。',
             confirmText: mode === 'all' ? '确认清空' : '重新引导',
             confirmColor: mode === 'all' ? '#D64C4C' : '#009952',
             success: (r) => resolve(r.confirm),
@@ -211,7 +215,7 @@ Page(
             content:
               '备份共 ' +
               info.entity_count +
-              ' 项数据。导入会替换当前记录、计划、训练和对话，请先导出当前备份。AI Key 保留。',
+              ' 项数据。导入会替换当前记录、计划、训练和对话，并清理照片缓存。请先导出当前备份。AI Key 保留。',
             confirmText: '确认导入',
             success: (r) => resolve(r.confirm),
             fail: () => resolve(false),
