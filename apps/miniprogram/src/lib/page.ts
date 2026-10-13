@@ -40,21 +40,40 @@ export function definePage(extra: any) {
     },
     onHide(this: any) {
       this._visible = false;
+      this._mainTouchY = null;
       clearInterval(this._timer);
     },
     onUnload(this: any) {
       this._visible = false;
+      this._mainTouchY = null;
       clearInterval(this._timer);
     },
     async onPullDownRefresh(this: any) {
       await this.load();
       wx.stopPullDownRefresh();
     },
-    onPageScroll(this: any) {
-      this.getTabBar?.()?.collapsePreview?.({ reason: 'page-scroll' });
+    mainTouchStart(this: any, event: any) {
+      this._mainTouchY =
+        event.touches?.length === 1 ? event.touches[0].clientY : null;
+    },
+    mainTouchMove(this: any, event: any) {
+      const y = event.touches?.[0]?.clientY;
+      if (
+        this._mainTouchY == null ||
+        y == null ||
+        Math.abs(y - this._mainTouchY) < 8
+      )
+        return;
+      this._mainTouchY = null;
+      // Native scrolling also happens after rendering or keyboard movement.
+      // Only an actual drag of the page should dismiss the coach's reply.
+      this.getTabBar?.()?.collapsePreview?.({ reason: 'page-drag' });
       this.selectComponent?.('#coach-dock')?.collapsePreview?.({
-        reason: 'page-scroll',
+        reason: 'page-drag',
       });
+    },
+    mainTouchEnd(this: any) {
+      this._mainTouchY = null;
     },
     async load(this: any) {
       const c = client();

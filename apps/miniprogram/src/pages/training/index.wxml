@@ -1,4 +1,4 @@
-<view class="page tab-page skin-{{skin}}" style="{{skinStyle}}">
+<view class="page tab-page skin-{{skin}}" style="{{skinStyle}}" bindtouchstart="mainTouchStart" bindtouchmove="mainTouchMove" bindtouchend="mainTouchEnd" bindtouchcancel="mainTouchEnd">
   <view class="heading"><view class="grow"><view class="brand"><view class="brand-dot"></view><text class="brand-name">FitMind</text><text class="brand-tagline">你的私人教练</text></view><view class="title">训练</view><view class="subtitle">每一组，都让进步更清晰。</view></view></view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view class="card" wx:if="{{!sessions.length}}"><view class="empty-training-icon"><image src="/assets/icons/dumbbell-{{skinAccentIcon}}.png" /></view><view class="section">还没有训练记录</view><view class="muted">先在计划页确认训练日，开始后即可逐组记录。</view><button class="button secondary" bindtap="plans">查看训练计划</button></view>

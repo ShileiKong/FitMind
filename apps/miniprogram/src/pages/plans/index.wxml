@@ -1,5 +1,5 @@
 <import src="./editor.wxml" />
-<view class="page tab-page skin-{{skin}}" style="{{skinStyle}}">
+<view class="page tab-page skin-{{skin}}" style="{{skinStyle}}" bindtouchstart="mainTouchStart" bindtouchmove="mainTouchMove" bindtouchend="mainTouchEnd" bindtouchcancel="mainTouchEnd">
   <view class="heading"><view class="grow"><view class="brand"><view class="brand-dot"></view><text class="brand-name">FitMind</text><text class="brand-tagline">你的私人教练</text></view><view class="title">训练计划</view><view class="subtitle">为下一次，做好准备。</view></view></view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view class="card" wx:for="{{plans}}" wx:key="id"><view class="eyebrow">{{item.statusLabel}} · v{{item.version}}</view><view class="section">{{item.name}}</view><view class="muted plan-overview">{{item.overviewText}}</view><button class="button secondary" data-id="{{item.id}}" bindtap="detail">查看计划</button></view>

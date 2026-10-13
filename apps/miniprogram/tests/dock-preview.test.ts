@@ -72,12 +72,29 @@ describe.each(['tab', 'workout'])('%s coach preview', (entry) => {
       selectComponent: () => (entry === 'workout' ? d : null),
     };
     vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 1000);
-    page.onPageScroll({ scrollTop: 120 });
+    page.mainTouchStart({ touches: [{ clientY: 400 }] });
+    page.mainTouchMove({ touches: [{ clientY: 360 }] });
     expect(d.data.previewOpen).toBe(false);
     expect(d.data.draft).toBe('未发送的想法');
     expect(c.saved('draft', '')).toBe('未发送的想法');
     d.openChat();
     expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/chat/index' });
+  });
+
+  it('keeps the reply visible when a refresh or keyboard changes the page scroll position', async () => {
+    const { d } = await dock(entry);
+    d.input({ detail: { value: '喝了300毫升水' } });
+    await d.send();
+    const { definePage } = await import('../src/lib/page');
+    const page = {
+      ...definePage({}),
+      getTabBar: () => (entry === 'tab' ? d : null),
+      selectComponent: () => (entry === 'workout' ? d : null),
+    };
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 2000);
+    page.onPageScroll?.({ scrollTop: 0 });
+    expect(d.data.previewOpen).toBe(true);
+    expect(d.data.preview.answer).toContain('已记录300毫升水');
   });
 
   it('keeps preview visible through keyboard repositioning and internal scroll, and releases its listener on detach', async () => {
@@ -126,6 +143,56 @@ describe.each(['tab', 'workout'])('%s coach preview', (entry) => {
     expect(c.data.summary.water_ml.known_total).toBe(300);
     expect(d.data.draft).toBe('');
     expect(c.pending()).toHaveLength(0);
+  });
+
+  it('shows the returned reply when an in-flight refresh holds an older message snapshot', async () => {
+    const { d } = await dock(entry);
+    const request = c.request.bind(c);
+    let release!: () => void;
+    c.request = async (method, path, body, key) => {
+      const result = await request(method, path, body, key);
+      if (method === 'GET' && path === '/messages' && !release)
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      return result;
+    };
+    const refreshing = c.refresh();
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    d.input({ detail: { value: '喝了300毫升水' } });
+    const sending = d.send();
+    await vi.waitFor(() =>
+      expect(c.agent.messages().at(-1)?.status).toBe('completed'),
+    );
+    release();
+    await Promise.all([refreshing, sending]);
+    expect(d.data.previewOpen).toBe(true);
+    expect(d.data.preview?.pending).toBe(false);
+    expect(d.data.preview?.answer).toContain('已记录300毫升水');
+    expect(d.data.preview?.receipts[0].label).toContain('已保存 · 300 毫升水');
+  });
+
+  it('renders a completed reply while the parent page is already loading', async () => {
+    const { d } = await dock(entry);
+    const { definePage } = await import('../src/lib/page');
+    const page: any = {
+      ...definePage({}),
+      _loading: true,
+      _scope: c.storageKey,
+      setData(value: any) {
+        Object.assign(this.data, value);
+      },
+      getTabBar: () => (entry === 'tab' ? d : null),
+      selectComponent: () => (entry === 'workout' ? d : null),
+    };
+    vi.stubGlobal('getCurrentPages', () => [page]);
+    d.input({ detail: { value: '喝了300毫升水' } });
+    await d.send();
+    expect(c.agent.messages().at(-1)?.result?.assistant_text).toContain(
+      '已记录300毫升水',
+    );
+    expect(d.data.preview?.answer).toContain('已记录300毫升水');
+    expect(d.data.preview?.pending).toBe(false);
   });
 
   it('shows a lost response, preserves the draft, and retries without duplicating a record', async () => {

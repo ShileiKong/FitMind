@@ -101,6 +101,11 @@ export class LocalClient extends MiniClient {
       else result = await this.core.request(method, path, body, key);
       if (generation !== this.localGeneration)
         throw new MiniError('DATA_CHANGED', '本地数据已更换，请重新操作。');
+      if (
+        method === 'POST' &&
+        (path === '/chat' || /^\/messages\/[^/]+\/recover$/.test(path))
+      )
+        this.data.messages = this.agent.messages();
       return result;
     } catch (error: any) {
       if (error instanceof MiniError) throw error;
@@ -188,6 +193,8 @@ export class LocalClient extends MiniClient {
       context: this.data.context,
       summary: this.data.summary,
       records: this.data.records,
+      // A reply can finish while this refresh still holds an older message list.
+      messages: this.agent.messages(),
     });
   }
   override refresh(): Promise<void> {
