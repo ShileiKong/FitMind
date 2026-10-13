@@ -14,6 +14,7 @@ export class LocalClient extends MiniClient {
   private localGeneration = 0;
   private activeRequests = 0;
   private localRefresh: Promise<void> | null = null;
+  private localTimeRequest: Promise<any> | null = null;
   constructor(
     private localPlatform: any,
     private clock = () => new Date(),
@@ -120,6 +121,44 @@ export class LocalClient extends MiniClient {
       this.activeRequests--;
     }
   }
+  override async time() {
+    this.activeRequests++;
+    const running: Promise<any> = Promise.resolve().then(async () => {
+      try {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const c = await super.time();
+          if (this.localTimeRequest !== running) return this.localTimeRequest;
+          const [summary, records] = await Promise.all([
+            this.request('GET', '/days/' + c.local_date + '/summary'),
+            this.request(
+              'GET',
+              '/records?local_date=' + c.local_date + '&limit=100',
+            ),
+          ]);
+          if (this.localTimeRequest !== running) return this.localTimeRequest;
+          const check = this.core.context();
+          this.updateTimeContext(check);
+          if (
+            check.local_date === c.local_date &&
+            check.timezone === c.timezone
+          ) {
+            this.data.summary = summary;
+            this.data.records = records.items;
+            return check;
+          }
+        }
+        throw new MiniError(
+          'DATE_CHANGED',
+          '日期刚刚更新，请刷新今日数据',
+          true,
+        );
+      } finally {
+        this.activeRequests--;
+      }
+    });
+    this.localTimeRequest = running;
+    return running;
+  }
   override async upload(
     path: string,
     filePath: string,
@@ -141,6 +180,15 @@ export class LocalClient extends MiniClient {
     } finally {
       this.activeRequests--;
     }
+  }
+  protected override publishRefresh(data: any) {
+    // The final time() check has already loaded a newer local daily snapshot.
+    super.publishRefresh({
+      ...data,
+      context: this.data.context,
+      summary: this.data.summary,
+      records: this.data.records,
+    });
   }
   override refresh(): Promise<void> {
     if (this.localRefresh) return this.localRefresh;

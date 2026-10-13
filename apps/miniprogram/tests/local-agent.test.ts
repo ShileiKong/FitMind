@@ -341,7 +341,7 @@ describe('phone local agent', () => {
     });
   });
 
-  it('keeps the original context and conversation boundary when later messages arrive before recovery', async () => {
+  it('keeps the original conversation boundary but refreshes the dated ledger before recovery', async () => {
     const h = setup([
       new Error('offline'),
       answer('后来回复'),
@@ -363,7 +363,13 @@ describe('phone local agent', () => {
     const context = JSON.parse(
       h.requests[2].data.messages[0].content.split('当前真实状态：')[1],
     );
-    expect(context.records).toEqual([]);
+    expect(context.records).toHaveLength(1);
+    expect(context.records[0]).toMatchObject({
+      kind: 'water',
+      amount_ml: 500,
+      local_date: '2026-10-11',
+    });
+    expect(context.today_summary.water_ml.known_total).toBe(500);
   });
 
   it('fails closed on malformed model tool JSON before any mutation and hides HTTP response errors', async () => {

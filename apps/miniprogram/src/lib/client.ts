@@ -57,6 +57,7 @@ export class MiniClient {
   private running = new Set<string>();
   private generation = 0;
   private refreshing: Promise<void> | null = null;
+  private contextRequest: Promise<any> | null = null;
   constructor(private platform: any) {
     this.settings = platform.getStorageSync('fitmind.credentials') || null;
   }
@@ -194,10 +195,26 @@ export class MiniClient {
       throw new MiniError('CONNECTION_CHANGED', '连接已切换，请重新操作');
     return result;
   }
-  async time() {
-    const c = await this.request('GET', '/context');
+  protected updateTimeContext(c: any) {
+    const previous = this.data.context;
+    if (
+      previous &&
+      (previous.local_date !== c.local_date || previous.timezone !== c.timezone)
+    ) {
+      this.data.summary = null;
+      this.data.records = [];
+    }
     this.data.context = c;
-    return c;
+  }
+  async time() {
+    const running: Promise<any> = this.request('GET', '/context').then((c) => {
+      // A late response must follow the newest context read, including rollback.
+      if (this.contextRequest !== running) return this.contextRequest;
+      this.updateTimeContext(c);
+      return c;
+    });
+    this.contextRequest = running;
+    return running;
   }
   pending(): Pending[] {
     return this.saved('pending', []);
@@ -338,6 +355,9 @@ export class MiniClient {
       }),
     );
   }
+  protected publishRefresh(data: any) {
+    this.data = data;
+  }
   refresh(): Promise<void> {
     if (this.refreshing) return this.refreshing;
     const stamp = this.generation;
@@ -393,7 +413,7 @@ export class MiniClient {
           capabilities,
           memories,
         ] = values;
-        this.data = {
+        this.publishRefresh({
           context: c,
           summary,
           records: records.items,
@@ -404,7 +424,7 @@ export class MiniClient {
           messages,
           capabilities,
           memories,
-        };
+        });
       } catch (e) {
         if (stamp === this.generation) {
           this.data.summary = null;

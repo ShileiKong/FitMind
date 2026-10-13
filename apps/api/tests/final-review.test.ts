@@ -228,7 +228,7 @@ it('hard feedback cannot become a successful workout from a conflicting low RPE'
     'NEED_TWO_SUCCESSES',
   );
 });
-it('recovering an older ambiguous correction freezes its original conversation and facts', async () => {
+it('recovering an older correction preserves its conversation and stable facts while refreshing the daily ledger', async () => {
   const requests: any[] = [];
   let fail = false;
   h = await makeHarness({
@@ -271,7 +271,17 @@ it('recovering an older ambiguous correction freezes its original conversation a
   await h.reopen();
   await h.services.agent.recover(h.ctx, 'correction');
   expect(requests.at(-1).transcript).toEqual(original.transcript);
-  expect(requests.at(-1).instructions).toBe(original.instructions);
+  const before = JSON.parse(original.instructions.split('当前真实状态：')[1]);
+  const after = JSON.parse(
+    requests.at(-1).instructions.split('当前真实状态：')[1],
+  );
+  expect(after.profile).toEqual(before.profile);
+  expect(after.active_workout).toEqual(before.active_workout);
+  expect(after.plans).toEqual(before.plans);
+  expect(before.today_summary.water_ml.known_total).toBe(300);
+  expect(after.today_summary.water_ml.known_total).toBe(800);
+  expect(after.relevant_summary.water_ml.known_total).toBe(800);
+  expect(after.records).toHaveLength(2);
 });
 it('explicit ongoing preferences do not require magic remember words', async () => {
   h = await makeHarness();

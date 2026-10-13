@@ -143,7 +143,8 @@ export class MemoryService {
     );
     return { local_date: date, target, budgets, foods };
   }
-  async buildContext(user: string, message: any) {
+  /** Re-read the clock and dated ledger before each provider call, including recovery. */
+  async dailyContext(user: string, message: any) {
     const profile = this.s.profile.get(user);
     const time = getTimeContext(this.clock, profile.timezone);
     const date = message.reference_local_date ?? time.local_date;
@@ -151,6 +152,30 @@ export class MemoryService {
       message.text?.includes('昨天') ? '昨天' : '今天',
       date,
     );
+    const target = this.s.targets.forDate(user, date);
+    // Start all synchronous ledger reads before yielding so totals/records agree.
+    const [summary, nutrition, relevantSummary, records, currentSummary] =
+      await Promise.all([
+        this.s.summary.forDate(user, date),
+        this.nutritionContext(user, date),
+        this.s.summary.forDate(user, relevant),
+        this.s.records.list(user, { local_date: relevant, limit: 30 }),
+        this.s.summary.forDate(user, time.local_date),
+      ]);
+    return {
+      current_time: time,
+      message_reference_date: date,
+      target,
+      today_summary: summary,
+      current_day_summary: currentSummary,
+      nutrition_context: nutrition,
+      relevant_summary: relevantSummary,
+      records: records.items,
+    };
+  }
+  async buildContext(user: string, message: any) {
+    const profile = this.s.profile.get(user);
+    const daily = await this.dailyContext(user, message);
     const active = message.workout_session_id
       ? this.s.workouts.get(user, message.workout_session_id)
       : message.workout_session_id === null
@@ -180,14 +205,9 @@ export class MemoryService {
           .slice(0, 10)
       : [];
     return {
-      current_time: time,
-      message_reference_date: date,
+      ...daily,
       attachment_ids: message.attachment_ids ?? [],
       profile,
-      target: this.s.targets.forDate(user, date),
-      today_summary: await this.s.summary.forDate(user, date),
-      nutrition_context: await this.nutritionContext(user, date),
-      relevant_summary: await this.s.summary.forDate(user, relevant),
       active_workout: active,
       recent_workouts: this.s.workouts.list(user).slice(0, 10),
       recommendations: this.s.workouts
@@ -196,9 +216,6 @@ export class MemoryService {
       exercise_history: history,
       plans: this.s.plans.list(user),
       memories: this.list(user),
-      records: (
-        await this.s.records.list(user, { local_date: relevant, limit: 30 })
-      ).items,
     };
   }
 }

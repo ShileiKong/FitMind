@@ -9,6 +9,7 @@ import { planOverview } from '@fitmind/contracts/plan-overview';
 import { DomainError, invariant } from '../../../api/src/http/errors';
 import { agentTools, executeTool } from '../../../api/src/modules/agent/tools';
 import { coachPrompt } from '../../../api/src/modules/agent/prompts';
+import { datedHistory } from '../../../api/src/modules/agent/history';
 import { resolveReferenceDate } from '../../../api/src/modules/time/service';
 import type { ProviderStep, ToolCall } from '../../../api/src/providers/types';
 import type { LocalCore } from './core';
@@ -198,7 +199,7 @@ export class LocalAgent {
       user_id: user,
       request_id: request.message_id,
       idempotency_key: request.message_id,
-      now_utc: this.clock().toISOString(),
+      now_utc: time.now_utc,
       timezone: time.timezone,
       reference_local_date: resolveReferenceDate(request, time),
       source_message_id: request.message_id,
@@ -211,6 +212,14 @@ export class LocalAgent {
       .slice(-8)
       .map((m) => ({
         message_id: m.message_id,
+        created_at: m.created_at,
+        reference_local_date: this.core.store.get<Message>(
+          user,
+          'message',
+          m.message_id,
+        ).ctx.reference_local_date,
+        timezone: this.core.store.get<Message>(user, 'message', m.message_id)
+          .ctx.timezone,
         text: m.text,
         result: {
           status: m.result!.status,
@@ -292,12 +301,26 @@ export class LocalAgent {
       '这条消息的记忆来源已删除，请用新消息继续',
       409,
     );
-    const prior = message.prior_snapshot
-      .filter((m) => !deleted.has(m.message_id))
-      .flatMap((m) => [
-        { role: 'user', content: m.text },
-        { role: 'assistant', content: m.result.assistant_text },
-      ]);
+    const stored = new Map(
+      this.core.store.list<Message>(user, 'message').map((m) => [m.id, m]),
+    );
+    const prior = datedHistory(
+      message.prior_snapshot
+        .filter((m) => !deleted.has(m.message_id))
+        .map((m) => {
+          // 0.3.7 snapshots omitted dates; recover them without altering old commands.
+          const original = stored.get(m.message_id);
+          return {
+            ...m,
+            created_at: m.created_at ?? original?.created_at,
+            reference_local_date:
+              m.reference_local_date ??
+              original?.ctx.reference_local_date ??
+              original?.result?.summary?.local_date,
+            timezone: m.timezone ?? original?.ctx.timezone,
+          };
+        }),
+    );
     const transcript = message.transcript.map((m) => {
       if (m.role !== 'tool') return m;
       try {
@@ -417,13 +440,13 @@ export class LocalAgent {
       while (message.round <= 5) {
         remaining();
         if (!message.pending) {
-          if (message.mode === 'model') {
-            message.context_snapshot.nutrition_context =
-              await this.core.services.memory.nutritionContext(
-                user,
-                message.ctx.reference_local_date,
-              );
-          }
+          Object.assign(
+            message.context_snapshot,
+            await this.core.services.memory.dailyContext(user, {
+              ...message.request,
+              reference_local_date: message.ctx.reference_local_date,
+            }),
+          );
           message.pending =
             message.mode === 'rules'
               ? await this.ruleStep(message)
@@ -583,6 +606,11 @@ export class LocalAgent {
   }
 
   private async ruleStep(message: Message): Promise<ProviderStep> {
+    const liveDate = message.context_snapshot.current_time.local_date;
+    const dayLabel =
+      message.ctx.reference_local_date === liveDate
+        ? '今天'
+        : message.ctx.reference_local_date;
     const calls = this.commands(message.id);
     if (calls.length) {
       const last = calls[calls.length - 1],
@@ -602,10 +630,7 @@ export class LocalAgent {
             : name === 'record_set'
               ? `已记录${output.set.weight_kg == null ? '实际重量未提供，' : output.set.weight_kg + '公斤，'}${output.set.reps}次。`
               : '';
-      if (
-        receipt.local_date &&
-        receipt.local_date !== message.ctx.reference_local_date
-      )
+      if (receipt.local_date && receipt.local_date !== liveDate)
         text += `归属${receipt.local_date}。`;
       if (
         name === 'record_water' &&
@@ -723,7 +748,7 @@ export class LocalAgent {
           });
         return {
           assistant_text: parts.length
-            ? '今天' + parts.join('，') + '。'
+            ? dayLabel + parts.join('，') + '。'
             : '尚未设置已生效的每日目标，暂时没有剩余额度。',
           tool_calls: [],
         };
@@ -745,8 +770,8 @@ export class LocalAgent {
             : budget.incomplete
               ? `${selected[1]}含未知营养，无法计算准确余额。`
               : budget.over > 0
-                ? `今天${selected[1]}已超出${budget.over}${selected[2]}。`
-                : `今天${selected[1]}还剩${budget.remaining}${selected[2]}${budget.estimated ? '（含估算）' : ''}。`,
+                ? `${dayLabel}${selected[1]}已超出${budget.over}${selected[2]}。`
+                : `${dayLabel}${selected[1]}还剩${budget.remaining}${selected[2]}${budget.estimated ? '（含估算）' : ''}。`,
         tool_calls: [],
       };
     }

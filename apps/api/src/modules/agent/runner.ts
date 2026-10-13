@@ -10,6 +10,7 @@ import { agentTools, executeTool } from './tools.js';
 import { coachPrompt } from './prompts.js';
 import { invariant, DomainError } from '../../http/errors.js';
 import { getTimeContext, resolveReferenceDate } from '../time/service.js';
+import { datedHistory } from './history.js';
 export class AgentRunner {
   private active = new Map<string, Promise<ChatResult>>();
   constructor(
@@ -133,6 +134,23 @@ export class AgentRunner {
         id,
       );
   }
+  private priorDates(user: string, messages: any[]) {
+    return messages.map((message) => {
+      const original = this.app.store.db
+        .prepare(
+          'SELECT context,created_at FROM messages WHERE id=? AND user_id=?',
+        )
+        .get(message.message_id, user) as any;
+      const ctx = original ? JSON.parse(original.context).ctx : undefined;
+      return {
+        ...message,
+        created_at: message.created_at ?? original?.created_at,
+        reference_local_date:
+          ctx?.reference_local_date ?? message.reference_local_date,
+        timezone: ctx?.timezone ?? message.timezone,
+      };
+    });
+  }
   private async run(row: any): Promise<ChatResult> {
     const state = JSON.parse(row.context),
       request = JSON.parse(row.request),
@@ -180,16 +198,16 @@ export class AgentRunner {
                   .all(ctx.user_id, boundary.rowid) as any[]
               ).map((m) => m.id),
             );
-            state.prior_snapshot = this.list(
+            state.prior_snapshot = this.priorDates(
               ctx.user_id,
-              request.conversation_id,
-            )
-              .filter(
-                (m: any) =>
-                  preceding.has(m.message_id) &&
-                  m.result?.status === 'completed',
-              )
-              .slice(-8);
+              this.list(ctx.user_id, request.conversation_id)
+                .filter(
+                  (m: any) =>
+                    preceding.has(m.message_id) &&
+                    m.result?.status === 'completed',
+                )
+                .slice(-8),
+            );
             this.save(row.id, state);
           }
           const deleted = new Set(
@@ -197,21 +215,24 @@ export class AgentRunner {
           );
           const context = {
             ...state.context_snapshot,
-            // Refresh the day's ledger before every answer, including writes in this turn.
-            nutrition_context: await this.app.services.memory.nutritionContext(
-              ctx.user_id,
-              ctx.reference_local_date,
-            ),
+            // Live daily reads never change the frozen command date or write time.
+            ...(await this.app.services.memory.dailyContext(ctx.user_id, {
+              ...request,
+              reference_local_date: ctx.reference_local_date,
+            })),
             memories: state.context_snapshot.memories.filter(
               (m: any) => !m.source_ids.some((id: string) => deleted.has(id)),
             ),
           };
-          const prior = state.prior_snapshot
-            .filter((m: any) => !deleted.has(m.message_id))
-            .flatMap((m: any) => [
-              { role: 'user', content: m.text },
-              { role: 'assistant', content: m.result.assistant_text },
-            ]);
+          // Older saved snapshots lack dates; recover them from the original row.
+          const prior = datedHistory(
+            this.priorDates(
+              ctx.user_id,
+              (state.prior_snapshot ?? []).filter(
+                (m: any) => !deleted.has(m.message_id),
+              ),
+            ),
+          );
           const timeout = Math.max(
             1,
             Math.min(
