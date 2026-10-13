@@ -84,6 +84,27 @@ async function target(core: LocalCore) {
 }
 
 describe('daily client snapshots', () => {
+  it.each([null, undefined, {}])(
+    'rejects an empty time response (%s) before publishing it',
+    async (missing) => {
+      const { client, request, transport } = remote(
+        () => new Date('2026-10-13T04:00:00Z'),
+      );
+      await client.connect({ base_url: 'https://fit.test', token: 'fixture' });
+      await client.refresh();
+      const previous = structuredClone(client.data.context);
+      request.handle = async (options: any) => {
+        const response = await transport(options);
+        if (options.url.endsWith('/context')) response.data.data = missing;
+        return response;
+      };
+      await expect(client.time()).rejects.toMatchObject({
+        code: 'INVALID_TIME_CONTEXT',
+      });
+      expect(client.data.context).toEqual(previous);
+    },
+  );
+
   it.each([
     {
       change: 'natural midnight',

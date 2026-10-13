@@ -1,5 +1,5 @@
 <view class="page skin-{{skin}}" style="{{skinStyle}}">
-  <view><view class="eyebrow">手机本地版 · 0.3.9</view><view class="title">你的私人 Agent</view><view class="subtitle">记录和计划保存在这部手机，无需电脑或服务器。</view></view>
+  <view><view class="eyebrow">手机本地版 · 0.3.10</view><view class="title">你的私人 Agent</view><view class="subtitle">记录和计划保存在这部手机，无需电脑或服务器。</view></view>
   <view class="error" wx:if="{{error}}">{{error}}</view>
   <view class="card">
     <view class="row between"><view class="section">AI 教练</view><view class="badge">{{keySaved ? '已配置' : '本地记录'}}</view></view>

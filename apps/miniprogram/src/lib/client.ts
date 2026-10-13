@@ -58,6 +58,7 @@ export class MiniClient {
   private generation = 0;
   private refreshing: Promise<void> | null = null;
   private contextRequest: Promise<any> | null = null;
+  private contextSequence = 0;
   constructor(private platform: any) {
     this.settings = platform.getStorageSync('fitmind.credentials') || null;
   }
@@ -196,6 +197,19 @@ export class MiniClient {
     return result;
   }
   protected updateTimeContext(c: any) {
+    if (
+      !c ||
+      typeof c.local_date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(c.local_date) ||
+      typeof c.timezone !== 'string' ||
+      !c.timezone ||
+      !Number.isFinite(Date.parse(c.now_utc))
+    )
+      throw new MiniError(
+        'INVALID_TIME_CONTEXT',
+        '当前日期读取失败，请退出小程序后重新打开。已有记录会保留。',
+        true,
+      );
     const previous = this.data.context;
     if (
       previous &&
@@ -206,15 +220,19 @@ export class MiniClient {
     }
     this.data.context = c;
   }
-  async time() {
-    const running: Promise<any> = this.request('GET', '/context').then((c) => {
-      // A late response must follow the newest context read, including rollback.
-      if (this.contextRequest !== running) return this.contextRequest;
-      this.updateTimeContext(c);
-      return c;
-    });
+  time(): Promise<any> {
+    // Allocate ownership before any callback can run in a lowered async runtime.
+    const sequence = ++this.contextSequence;
+    const running = this.readTimeContext(sequence);
     this.contextRequest = running;
     return running;
+  }
+  private async readTimeContext(sequence: number) {
+    const c = await this.request('GET', '/context');
+    // A late response must follow the newest context read, including rollback.
+    if (sequence !== this.contextSequence) return this.contextRequest;
+    this.updateTimeContext(c);
+    return c;
   }
   pending(): Pending[] {
     return this.saved('pending', []);
